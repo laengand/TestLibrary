@@ -1,0 +1,6 @@
+TestLibraryConsole/bin/Debug
+*Debug*
+GeneratedClass*
+*.suo
+*.template
+*EventHandler*
