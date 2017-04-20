@@ -1,6 +1,4 @@
-﻿using IA.Common.StandardCommunication;
-using IA.Common.StandardCommunication.Tools;
-using IA.Common.UsbCommunication;
+﻿
 using Microsoft.CSharp;
 using System;
 using System.CodeDom.Compiler;
@@ -10,7 +8,11 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+
 using System.Text.RegularExpressions;
+using IA.Common.StandardCommunication;
+using IA.Common.StandardCommunication.Tools;
+using IA.Common.UsbCommunication;
 namespace TestLibrary
 {
   public class TestClass
@@ -24,7 +26,7 @@ namespace TestLibrary
 
     public bool Connect()
     {
-      if (communication!= null)
+      if (communication != null)
         return communication.Connect(0);
       else
         return false;
@@ -51,13 +53,13 @@ namespace TestLibrary
 
       CSharpCodeProvider provider = new CSharpCodeProvider();
       CompilerParameters para = new CompilerParameters();
-      
+
       para.ReferencedAssemblies.Add(appPath + @"\CommonTools.dll");
       para.ReferencedAssemblies.Add(appPath + @"\StandardCommunication.dll");
       para.ReferencedAssemblies.Add(appPath + @"\CommunicationTools.dll");
       para.ReferencedAssemblies.Add(appPath + @"\UsbCommunication.dll");
 
-      para.OutputAssembly = appPath + @"\GeneratedClass0x"+ id.ToString("X4") +".dll";
+      para.OutputAssembly = appPath + @"\GeneratedClass0x" + id.ToString("X4") + ".dll";
 
       CompilerResults results = null;
       if (!File.Exists(para.OutputAssembly))
@@ -78,7 +80,7 @@ namespace TestLibrary
           throw new System.InvalidOperationException("Errors during compilation: " + errors + "\r\nWarnings: " + warnings);
         }
       }
-      
+
       assembly = Assembly.LoadFrom(para.OutputAssembly);
       if (assembly != null)
       {
@@ -102,7 +104,7 @@ namespace TestLibrary
 
       System.Text.StringBuilder generatedCode = new System.Text.StringBuilder();
       System.Text.StringBuilder setupEventReceivers = new System.Text.StringBuilder();
-      
+
       setupEventReceivers.Append("public void SetupEventReceivers(){");
 
       int eventHandlerNameIndex = 0;
@@ -112,7 +114,7 @@ namespace TestLibrary
         string cmdName = cmdDef.AutoFileNameHeader;
         cmdName = cmdName.Remove(0, 5);
         cmdName = formatCmd(cmdName);
-        
+
         string className;
         string classDataName;
         if (cmdDef.EventType == EventType.NotEvent)
@@ -125,12 +127,12 @@ namespace TestLibrary
         generatedCode.Append(CreateEnums(cmdDef));
         // DATA CLASS START
         System.Text.StringBuilder dataclass = new System.Text.StringBuilder();
-        
+
         dataclass.Append("public class " + classDataName + "\r\n{\r\n");
         for (int i = 0; i < cmdDef.Parameters.Count; i++)
         {
           ParameterDefinition para = cmdDef.Parameters[i];
-          string parameterName = formatParameter(para.Discription,"", "_p" + i.ToString());
+          string parameterName = formatParameter(para.Discription, "", "_p" + i.ToString());
           string enumName = cmdName + "_" + parameterName;
           dataclass.Append("public " + (para.IsEnum ? enumName : para.Type.ToString()) + " " + parameterName + ";\r\n");
 
@@ -138,11 +140,11 @@ namespace TestLibrary
         for (int i = 0; i < cmdDef.ReplyParameters.Count; i++)
         {
           ParameterDefinition para = cmdDef.ReplyParameters[i];
-          string parameterName = formatParameter(para.Discription,"r", "_p" + i.ToString());
+          string parameterName = formatParameter(para.Discription, "r", "_p" + i.ToString());
           string enumName = cmdName + "_" + parameterName;
           dataclass.Append("public " + (para.IsEnum ? enumName : para.Type.ToString()) + " " + parameterName + ";\r\n");
         }
-        
+
         if ((cmdDef.CommandId >= 0x4000) && (cmdDef.CommandId <= 0xBFFF))
         {
           dataclass.Append("public byte[] bulk;");
@@ -175,14 +177,14 @@ namespace TestLibrary
           for (int i = 0; i < cmdDef.Parameters.Count; i++)
           {
             ParameterDefinition para = cmdDef.Parameters[i];
-            string parameterName = formatParameter(para.ToString(),"", "_p" + i.ToString());
+            string parameterName = formatParameter(para.ToString(), "", "_p" + i.ToString());
             string enumName = cmdName + "_" + parameterName;
-            code.Append("d." + parameterName + " = " + (para.IsEnum ? "(" + enumName + ")":"") + "parameters." + GetParameterReadString(para) + ";\r\n");
+            code.Append("d." + parameterName + " = " + (para.IsEnum ? "(" + enumName + ")" : "") + "parameters." + GetParameterReadString(para) + ";\r\n");
           }
 
-          
+
           if ((cmdDef.CommandId >= 0x6000) && (cmdDef.CommandId <= 0x7FFF))
-          { 
+          {
             code.Append("d.bulk = new byte[bulkLength];\r\n");
           }
           else if ((cmdDef.CommandId >= 0xA000) && (cmdDef.CommandId <= 0xBFFF))
@@ -191,7 +193,7 @@ namespace TestLibrary
             code.Append("bulk.Position = 0;\r\n");
             code.Append("bulk.Read(d.bulk, 0, bulkLength);\r\n");
           }
-        
+
           code.Append("if(" + className + " != null)");
           code.Append("{");
           code.Append(className + ".Invoke(this, new " + classNameArgs + "(d));\r\n");
@@ -215,13 +217,13 @@ namespace TestLibrary
           StringBuilder code = new StringBuilder();
           code.Append("Parameters p = new Parameters();\r\n");
           code.Append(classDataName + " d = new " + classDataName + "();\r\n");
-          
+
           for (int i = 0; i < cmdDef.Parameters.Count; i++)
           {
-            string parameterName = formatParameter(cmdDef.Parameters[i].ToString(),"", "_p" + i.ToString());
+            string parameterName = formatParameter(cmdDef.Parameters[i].ToString(), "", "_p" + i.ToString());
             string enumName = cmdName + "_" + parameterName;
             inputParameters.Append((cmdDef.Parameters[i].IsEnum ? enumName : cmdDef.Parameters[i].Type.ToString()) + " " + parameterName + ((i < (cmdDef.Parameters.Count - 1)) ? "," : ""));
-            code.Append("p.Write(" + parameterName + ");" + "d." + parameterName + " = " + parameterName + ";\r\n"); 
+            code.Append("p.Write(" + parameterName + ");" + "d." + parameterName + " = " + parameterName + ";\r\n");
           }
 
 
@@ -234,8 +236,8 @@ namespace TestLibrary
             code.Append("bulk.Read(d.bulk, 0, (int)bulk.Length);\r\n");
           }
           else if ((cmdDef.CommandId >= 0x8000) && (cmdDef.CommandId <= 0xBFFF))
-          { 
-            inputParameters.Append((cmdDef.Parameters.Count > 0 ? ",":"")+ "System.String bulkPath");
+          {
+            inputParameters.Append((cmdDef.Parameters.Count > 0 ? "," : "") + "System.String bulkPath");
             code.Append("Stream bulk = null;\r\n");
             code.Append("if (bulkPath != null)");
             code.Append("{");
@@ -248,10 +250,10 @@ namespace TestLibrary
             code.Append("communication.SendCommand((UInt16)" + "0x" + cmdDef.CommandId.ToString("X4") + ", ref p);\r\n");
           }
 
-          
+
           for (int i = 0; i < cmdDef.ReplyParameters.Count; i++)
           {
-            string parameterName = formatParameter(cmdDef.ReplyParameters[i].ToString(),"r", "_p" + i.ToString());
+            string parameterName = formatParameter(cmdDef.ReplyParameters[i].ToString(), "r", "_p" + i.ToString());
 
             string enumName = cmdName + "_" + parameterName;
             code.Append("d." + parameterName + " = " + (cmdDef.ReplyParameters[i].IsEnum ? "(" + enumName + ")" : "") + "p." + GetParameterReadString(cmdDef.ReplyParameters[i]) + ";\r\n");
@@ -346,8 +348,8 @@ namespace TestLibrary
       }
       return rtn;
     }
-    
-    private string formatParameter(string parameterString, string prefix="", string suffix="")
+
+    private string formatParameter(string parameterString, string prefix = "", string suffix = "")
     {
       parameterString = parameterString.Replace(" ", "");
       parameterString = Regex.Replace(parameterString, @"[^0-9a-zA-Z]+", "_");
@@ -417,9 +419,9 @@ namespace TestLibrary
               enumValue = e.Value.ToString();
               break;
           }
-          
+
           string enumName = formatEnum(e.ToString()) + "_e" + j;
-                    
+
 
           code.Append(enumName + " = " + enumValue + ((j != para.Enums.Count - 1) ? ", " : ""));
         }

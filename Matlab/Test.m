@@ -21,12 +21,13 @@ catch ex
 end
 
 % Set the pid 
-hexId = '0003';
+hexId = '0012';
 id = hex2dec(hexId);
 pidFolderPath = 'C:\Users\laad\Documents\Visual Studio 2015\Projects\FirmwareTestTool\PC\code\Output\Debug\Command Definitions';
 pidFilePath = [pidFolderPath '\USB, PID ' hexId '.txt'];
 
-test = TestLibrary.TestClass(id, pidFilePath);
+import TestLibrary.*;
+test = TestClass(id, pidFilePath);
 device = test.GeneratedClass;
 
 % Create default event handlers. These should be modified to correspond to
@@ -34,7 +35,7 @@ device = test.GeneratedClass;
 CreateEventHandlers(id,test);
 
 % Create instance of event handlers and set up listeners
-eventHandlers = EventHandlerClass0x0003();
+eventHandlers = EventHandlerClass0x0012();
 e = cell(test.eventHandlerNames)';
 els = eventHandlers.SetupEventListeners(device);
 
@@ -47,7 +48,7 @@ end
 % Perform test
 disp('Test is running. Hit a key to stop')
 device.Ping
-
+    
 pause('on')
 pause
 pause('off')
