@@ -56,8 +56,8 @@ namespace TestLibrary
     public object GeneratedClass;
     static private IStandardCommunication communication;
     static public string appPath;
-
-    public void SetEventReceiver(UInt16 cmdId, UInt32 readSize, string filename)
+    
+    public void SetEventReceiver(UInt16 cmdId, string filename, UInt32 readSize)
     {
       FileStream stream = null;
       RealTimeHandler realtimeHandler = new RealTimeHandler(interpreter.GetCommandDefinition(cmdId), stream);
@@ -86,13 +86,10 @@ namespace TestLibrary
       communication = new UsbCommunication(id);
       string pidFile = File.ReadAllText(pidFilePath);
       interpreter = new CommandInterpreter(pidFile);
-      string code = CreateClasses(ref interpreter);
-      appPath = new Uri(System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().GetName().CodeBase)).LocalPath;
-      string debugFile = appPath + @"\debugFile.cs";
-      File.WriteAllText(debugFile, code);
-
+      
       CSharpCodeProvider provider = new CSharpCodeProvider();
       CompilerParameters para = new CompilerParameters();
+      appPath = new Uri(System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().GetName().CodeBase)).LocalPath;
 
       para.ReferencedAssemblies.Add(appPath + @"\CommonTools.dll");
       para.ReferencedAssemblies.Add(appPath + @"\StandardCommunication.dll");
@@ -100,6 +97,10 @@ namespace TestLibrary
       para.ReferencedAssemblies.Add(appPath + @"\UsbCommunication.dll");
 
       para.OutputAssembly = appPath + @"\GeneratedClass0x" + id.ToString("X4") + ".dll";
+
+      string code = CreateClasses(ref interpreter);
+      string debugFile = appPath + @"\debugFile.cs";
+      File.WriteAllText(debugFile, code);
 
       CompilerResults results = null;
       if (!File.Exists(para.OutputAssembly))
@@ -139,11 +140,14 @@ namespace TestLibrary
       using System.IO; ");
       generatedClass.Append("namespace TestLibrary{ public class GeneratedClass{");
       generatedClass.Append("IStandardCommunication communication;");
+   
       generatedClass.Append("public GeneratedClass(){this.communication = null;}\r\n");
       generatedClass.Append("public GeneratedClass(IStandardCommunication communication){this.communication = communication;}\r\n");
 
       System.Text.StringBuilder generatedCode = new System.Text.StringBuilder();
       System.Text.StringBuilder setupEventReceivers = new System.Text.StringBuilder();
+      System.Text.StringBuilder dataclassDescription = new System.Text.StringBuilder();
+      System.Text.StringBuilder cmdNames = new System.Text.StringBuilder();
 
       setupEventReceivers.Append("public void SetupEventReceivers(){");
 
@@ -154,14 +158,15 @@ namespace TestLibrary
         string cmdName = cmdDef.AutoFileNameHeader;
         cmdName = cmdName.Remove(0, 5);
         cmdName = formatCmd(cmdName);
-
+        
         string className;
         string classDataName;
         if (cmdDef.EventType == EventType.NotEvent)
           className = cmdName;
         else
           className = "Event" + cmdName;
-
+        cmdNames.Append(@"@""" + className + @"""");
+        cmdNames.Append(",\r\n");
         classDataName = className + "Data";
         generatedCode.Append("\r\n/* -------------------- 0x" + cmdDef.CommandId.ToString("X4") + "-------------------- */\r\n");
         generatedCode.Append(CreateEnums(cmdDef));
@@ -169,28 +174,32 @@ namespace TestLibrary
         System.Text.StringBuilder dataclass = new System.Text.StringBuilder();
 
         dataclass.Append("public class " + classDataName + "\r\n{\r\n");
+        dataclassDescription.Append(@"@""");
+        dataclassDescription.Append("Parameters\r\n");
         for (int i = 0; i < cmdDef.Parameters.Count; i++)
         {
           ParameterDefinition para = cmdDef.Parameters[i];
           string parameterName = formatParameter(para.Discription, "", "_p" + i.ToString());
           string enumName = cmdName + "_" + parameterName;
           dataclass.Append("public " + (para.IsEnum ? enumName : para.Type.ToString()) + " " + parameterName + ";\r\n");
-
+          dataclassDescription.Append(parameterName + "\r\n");
         }
+        dataclassDescription.Append("Reply\r\n");
         for (int i = 0; i < cmdDef.ReplyParameters.Count; i++)
         {
           ParameterDefinition para = cmdDef.ReplyParameters[i];
           string parameterName = formatParameter(para.Discription, "r", "_p" + i.ToString());
           string enumName = cmdName + "_" + parameterName;
           dataclass.Append("public " + (para.IsEnum ? enumName : para.Type.ToString()) + " " + parameterName + ";\r\n");
+          dataclassDescription.Append(parameterName+ "\r\n");
         }
-
+        
         if ((cmdDef.CommandId >= 0x4000) && (cmdDef.CommandId <= 0xBFFF))
         {
           dataclass.Append("public byte[] bulk;");
         }
         dataclass.Append("} ");
-
+        dataclassDescription.Append(@"""" + ",\r\n");
         generatedCode.Append(dataclass);
         // DATA CLASS END
 
@@ -221,7 +230,6 @@ namespace TestLibrary
             string enumName = cmdName + "_" + parameterName;
             code.Append("d." + parameterName + " = " + (para.IsEnum ? "(" + enumName + ")" : "") + "parameters." + GetParameterReadString(para) + ";\r\n");
           }
-
 
           if ((cmdDef.CommandId >= 0x6000) && (cmdDef.CommandId <= 0x7FFF))
           {
@@ -310,9 +318,11 @@ namespace TestLibrary
           // COMMAND WRAPPERS END
         }
       }
-
+      
       setupEventReceivers.Append("} ");
-      string rtn = generatedClass.ToString() + generatedCode.ToString() + setupEventReceivers.ToString() + "}}";
+      string cmdDes = "public string[] cmdDescriptions = new string[] {\r\n" + dataclassDescription + "\r\n};";
+      string cmdN = "public string[] cmdNames = new string[] {\r\n" + cmdNames + "\r\n};";
+      string rtn = generatedClass.ToString() + cmdN + cmdDes + generatedCode.ToString() + setupEventReceivers.ToString() + "}}";
       return rtn;
     }
     private string GetParameterType(ParameterDefinition para)

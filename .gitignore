@@ -3,5 +3,5 @@ TestLibraryConsole/bin/Debug
 GeneratedClass*
 *.suo
 *.template
-*EventHandler*
+EventHandler*
 *.asv
