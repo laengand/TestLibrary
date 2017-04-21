@@ -17,12 +17,52 @@ namespace TestLibrary
 {
   public class TestClass
   {
+    public class RealTimeHandler
+    {
+      FileStream stream;
+      CommandDefinition cmdDef;
+      byte[] realtimeData;
+      public RealTimeHandler(CommandDefinition cmdDef, FileStream stream)
+      {
+        this.cmdDef = cmdDef;
+        this.stream = stream;
+      }
+      void Handler(ushort command, ref Parameters parameters, Stream data, int inBulkLength)
+      {
+        if (cmdDef.CommandType != CommandStatus.BulkReceived)
+          return;
+        int readBytes = stream.Read(realtimeData, 0, realtimeData.Length);
+        if (readBytes < realtimeData.Length)
+        {
+          stream.Seek(0, SeekOrigin.Begin);
+          stream.Read(realtimeData, readBytes, realtimeData.Length - readBytes);
+        }
+        data.Write(realtimeData, 0, realtimeData.Length);
+      }
+      public void SetEventReceiver(IStandardCommunication communication, string fullFilename, UInt32 readSize)
+      {
+        communication.SetEventReceiver(cmdDef.CommandId, (NewRealtimeEventDelegate)Handler);
+        stream = new FileStream(fullFilename, FileMode.Open, FileAccess.Read);
+        if (readSize == 0)
+          realtimeData = new byte[stream.Length];
+        else
+          realtimeData = new byte[readSize];
+      }
+    }
+
     public readonly CommandInterpreter interpreter;
     public Assembly assembly;
     public string[] eventHandlerNames;
     public object GeneratedClass;
     static private IStandardCommunication communication;
     static public string appPath;
+
+    public void SetEventReceiver(UInt16 cmdId, UInt32 readSize, string filename)
+    {
+      FileStream stream = null;
+      RealTimeHandler realtimeHandler = new RealTimeHandler(interpreter.GetCommandDefinition(cmdId), stream);
+      realtimeHandler.SetEventReceiver(communication, filename, readSize); 
+    }
 
     public bool Connect()
     {

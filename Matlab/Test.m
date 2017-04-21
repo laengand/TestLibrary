@@ -31,7 +31,7 @@ pidFilePath = [pidFolderPath '\USB, PID ' hexId '.txt'];
 test = TestClass(id, pidFilePath);
 device = test.GeneratedClass;
 
-%% Create default event handlers.
+%% Create default event handlers if needed
 % These should be modified to correspond to a desired action, when an event is received
 if exist(['EventHandlerClass0x' hexId '.m'],'file') == 0
     CreateEventHandlers(id,test);
@@ -51,7 +51,7 @@ end
 %% Perform test
 disp('Test is running. Hit a key to stop')
 device.Ping
-    
+
 pause('on')
 pause
 pause('off')
