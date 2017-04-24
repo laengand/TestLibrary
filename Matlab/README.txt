@@ -54,11 +54,15 @@ General structure of the Test.m file:
     In order to use generated event handlers, you have to remove the .template 
     extension and rerun the <script name>.m.
   
-5.  The script will attempt to connect to the device and report and error if 
+5.  The script will attempt to connect to the device and report an error if 
     the connection could not be established.
   
 6.  After a successfull connection, the script will send whatever commands you 
-    have specified. 
+    have specified. Commands for the given device can be access through 
+    device.<commmand name>. If the command contains enumerators, these can be 
+    accessed through TestLibrary.<command name>.<enumerator name>. Matlab will 
+    list the available commands after TestLibrary. is entered folowed by a 
+    <TAB>.
   
 7.  After having sent all the commands, the script will enter a paused state 
     where it can still receive events. To exit this state, hit a random key 
@@ -71,3 +75,8 @@ Steps when changing the PID file.
 1.  Delete the GeneratedClass0x<PID>.dll, you might have to close Matlab if the
     dll has already been loaded into memory
 2.  Rerun your script. This will generate a new GeneratedClass0x<PID>.dll
+
+Steps when setting up realTime event handlers
+1.  Call test.SetEventReceiver(hex2dec('<hex id>')), <file path>, receive size)
+    before sending commands which will initiate realtime events e.g. 
+    test.SetEventReceiver(hex2dec('6400'), '..\Scripts\Eagles HotelCalifornia_f32.aiff', 4096)
