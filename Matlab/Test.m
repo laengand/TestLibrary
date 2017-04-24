@@ -21,7 +21,7 @@ catch ex
     error('Library or support file loading problem. Script halted')
 end
 
-%% Set the pid 
+%% Set the PID 
 hexId = '0012'; % Replace this with the desired PID
 id = hex2dec(hexId);
 pidFolderPath = 'C:\Users\laad\Documents\Visual Studio 2015\Projects\FirmwareTestTool\PC\code\Output\Debug\Command Definitions';
