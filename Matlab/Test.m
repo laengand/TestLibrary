@@ -50,7 +50,7 @@ end
 
 %% Perform test
 disp('Test is running. Hit a key to stop')
-device.Ping
+device.Cmd0000Ping
 
 pause('on')
 pause

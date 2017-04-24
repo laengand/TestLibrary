@@ -155,16 +155,17 @@ namespace TestLibrary
       eventHandlerNames = new string[interpreter.CommandList.Count];
       foreach (CommandDefinition cmdDef in interpreter.CommandList)
       {
-        string cmdName = cmdDef.AutoFileNameHeader;
-        cmdName = cmdName.Remove(0, 5);
-        cmdName = formatCmd(cmdName);
+        //string cmdName = cmdDef.AutoFileNameHeader;
+        //cmdName = cmdName.Remove(0, 5);
+        string cmdName;
         
         string className;
         string classDataName;
         if (cmdDef.EventType == EventType.NotEvent)
-          className = cmdName;
+          className = formatCmd(cmdDef);
         else
-          className = "Event" + cmdName;
+          className = formatEvent(cmdDef);
+
         cmdNames.Append(@"@""" + className + @"""");
         cmdNames.Append(",\r\n");
         classDataName = className + "Data";
@@ -179,8 +180,8 @@ namespace TestLibrary
         for (int i = 0; i < cmdDef.Parameters.Count; i++)
         {
           ParameterDefinition para = cmdDef.Parameters[i];
-          string parameterName = formatParameter(para.Discription, "", "_p" + i.ToString());
-          string enumName = cmdName + "_" + parameterName;
+          string parameterName = formatParameter(para.Discription, "p" + i.ToString() + "_", "");
+          string enumName = className + "_" + parameterName;
           dataclass.Append("public " + (para.IsEnum ? enumName : para.Type.ToString()) + " " + parameterName + ";\r\n");
           dataclassDescription.Append(parameterName + "\r\n");
         }
@@ -188,8 +189,8 @@ namespace TestLibrary
         for (int i = 0; i < cmdDef.ReplyParameters.Count; i++)
         {
           ParameterDefinition para = cmdDef.ReplyParameters[i];
-          string parameterName = formatParameter(para.Discription, "r", "_p" + i.ToString());
-          string enumName = cmdName + "_" + parameterName;
+          string parameterName = formatReplyParameter(para.Discription, "p" + i.ToString() + "_", "");
+          string enumName = className + "_" + parameterName;
           dataclass.Append("public " + (para.IsEnum ? enumName : para.Type.ToString()) + " " + parameterName + ";\r\n");
           dataclassDescription.Append(parameterName+ "\r\n");
         }
@@ -226,8 +227,8 @@ namespace TestLibrary
           for (int i = 0; i < cmdDef.Parameters.Count; i++)
           {
             ParameterDefinition para = cmdDef.Parameters[i];
-            string parameterName = formatParameter(para.ToString(), "", "_p" + i.ToString());
-            string enumName = cmdName + "_" + parameterName;
+            string parameterName = formatParameter(para.ToString(), "p" + i.ToString() + "_", "");
+            string enumName = className + "_" + parameterName;
             code.Append("d." + parameterName + " = " + (para.IsEnum ? "(" + enumName + ")" : "") + "parameters." + GetParameterReadString(para) + ";\r\n");
           }
 
@@ -268,8 +269,8 @@ namespace TestLibrary
 
           for (int i = 0; i < cmdDef.Parameters.Count; i++)
           {
-            string parameterName = formatParameter(cmdDef.Parameters[i].ToString(), "", "_p" + i.ToString());
-            string enumName = cmdName + "_" + parameterName;
+            string parameterName = formatParameter(cmdDef.Parameters[i].ToString(), "p" + i.ToString() + "_", "");
+            string enumName = className + "_" + parameterName;
             inputParameters.Append((cmdDef.Parameters[i].IsEnum ? enumName : cmdDef.Parameters[i].Type.ToString()) + " " + parameterName + ((i < (cmdDef.Parameters.Count - 1)) ? "," : ""));
             code.Append("p.Write(" + parameterName + ");" + "d." + parameterName + " = " + parameterName + ";\r\n");
           }
@@ -301,9 +302,9 @@ namespace TestLibrary
 
           for (int i = 0; i < cmdDef.ReplyParameters.Count; i++)
           {
-            string parameterName = formatParameter(cmdDef.ReplyParameters[i].ToString(), "r", "_p" + i.ToString());
+            string parameterName = formatReplyParameter(cmdDef.ReplyParameters[i].ToString(), "p" + i.ToString() + "_", "");
 
-            string enumName = cmdName + "_" + parameterName;
+            string enumName = className + "_" + parameterName;
             code.Append("d." + parameterName + " = " + (cmdDef.ReplyParameters[i].IsEnum ? "(" + enumName + ")" : "") + "p." + GetParameterReadString(cmdDef.ReplyParameters[i]) + ";\r\n");
           }
 
@@ -403,18 +404,31 @@ namespace TestLibrary
     {
       parameterString = parameterString.Replace(" ", "");
       parameterString = Regex.Replace(parameterString, @"[^0-9a-zA-Z]+", "_");
-      //parameterString = parameterString.Replace(".", "_").Replace(" ", "").Replace("(", "").Replace(")", "").Replace("[", "").Replace("]", "").Replace(";", "").Replace("/", "_").Replace("\\", "_");
+      
       if (parameterString == "")
         return prefix + "_" + suffix;
       if (Char.IsDigit(parameterString.ElementAt(0)))
         parameterString = "n" + parameterString;
       return prefix + parameterString + suffix;
     }
+
+    private string formatReplyParameter(string parameterString, string prefix = "", string suffix = "")
+    {
+      parameterString = parameterString.Replace(" ", "");
+      parameterString = Regex.Replace(parameterString, @"[^0-9a-zA-Z]+", "_");
+
+      if (parameterString == "")
+        return prefix + "_" + suffix;
+      if (Char.IsDigit(parameterString.ElementAt(0)))
+        parameterString = "n" + parameterString;
+      return prefix + "r" + parameterString + suffix;
+    }
+
     private string formatEnum(string enumString)
     {
       enumString = enumString.Replace(" ", "");
       enumString = Regex.Replace(enumString, @"[^0-9a-zA-Z]+", "");
-      //enumString = enumString.ToString().Replace(" ", "_").Replace("&", "and").Replace("-", "_").Replace("/", "_").Replace(".", "_").Replace("(", "").Replace(")", "");
+      
       if (enumString == "")
         return "_";
 
@@ -422,17 +436,28 @@ namespace TestLibrary
         enumString = "n" + enumString;
       return enumString;
     }
+
+    private string formatCmd(CommandDefinition cmdDef)
+    { 
+      return "Cmd" + formatCmd(cmdDef.AutoFileNameHeader);
+    }
+
     private string formatCmd(string cmd)
     {
       cmd = cmd.Replace(" ", "");
       cmd = Regex.Replace(cmd, @"[^0-9a-zA-Z]+", "_");
-      //cmd = cmd.Replace(" ", "").Replace(".", "").Replace("(", "").Replace(")", "").Replace("[", "").Replace("]", "").Replace("/", "_").Replace("\\", "_");
+      
       if (cmd == "")
         return "_";
 
       return cmd;
     }
-    private string CreateEnum(string prefix, IList<ParameterDefinition> parameters)
+    private string formatEvent(CommandDefinition cmdDef)
+    {
+      return "Event" + formatCmd(cmdDef.AutoFileNameHeader);
+    }
+
+    private string CreateEnum(IList<ParameterDefinition> parameters, string prefix, string suffix)
     {
       System.Text.StringBuilder code = new System.Text.StringBuilder();
       for (int i = 0; i < parameters.Count; i++)
@@ -442,9 +467,9 @@ namespace TestLibrary
         if (!para.IsEnum)
           continue;
 
-        string parameterName = formatParameter(para.Discription, "", "_p" + i.ToString());
+        string parameterName = formatParameter(para.Discription, prefix + "p" + i.ToString() + suffix, ""); // the names prefix and suffix does not make much sense when both are used as prefix together with the paramters number
 
-        code.Append("public enum " + prefix + parameterName + ":" + GetParameterType(para) + "{");
+        code.Append("public enum " + parameterName + ":" + GetParameterType(para) + "{");
 
         for (int j = 0; j < para.Enums.Count; j++)
         {
@@ -470,10 +495,10 @@ namespace TestLibrary
               break;
           }
 
-          string enumName = formatEnum(e.ToString()) + "_e" + j;
+          string enumValueName = "e" + j + "_" + formatEnum(e.ToString());
 
 
-          code.Append(enumName + " = " + enumValue + ((j != para.Enums.Count - 1) ? ", " : ""));
+          code.Append(enumValueName + " = " + enumValue + ((j != para.Enums.Count - 1) ? ", " : ""));
         }
         code.Append("}\r\n");
       }
@@ -482,12 +507,16 @@ namespace TestLibrary
     private string CreateEnums(CommandDefinition cmdDef)
     {
       System.Text.StringBuilder code = new System.Text.StringBuilder();
-      string cmdName = cmdDef.AutoFileNameHeader;
-      cmdName = cmdName.Remove(0, 5);
-      cmdName = formatCmd(cmdName);
 
-      code.Append(CreateEnum(cmdName + "_", cmdDef.Parameters));
-      code.Append(CreateEnum(cmdName + "_r", cmdDef.ReplyParameters));
+      string name;
+
+      if (cmdDef.EventType == EventType.NotEvent)
+        name = formatCmd(cmdDef);
+      else
+        name = formatEvent(cmdDef);
+
+      code.Append(CreateEnum(cmdDef.Parameters, name + "_","_"));
+      code.Append(CreateEnum(cmdDef.ReplyParameters, name + "_", "_r"));
 
       return code.ToString();
     }
