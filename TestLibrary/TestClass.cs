@@ -418,7 +418,7 @@ namespace TestLibrary
       parameterString = Regex.Replace(parameterString, @"[^0-9a-zA-Z]+", "_");
 
       if (parameterString == "")
-        return prefix + "_" + suffix;
+        return prefix + "r_" + suffix;
       if (Char.IsDigit(parameterString.ElementAt(0)))
         parameterString = "n" + parameterString;
       return prefix + "r" + parameterString + suffix;

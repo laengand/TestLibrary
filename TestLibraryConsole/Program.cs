@@ -10,7 +10,7 @@ namespace TestLibraryConsole
   {
     static void Main(string[] args)
     {
-      ushort id = 0x0012;
+      ushort id = 0x000E;
       string pidFolderPath = @"C:\Users\laad\Documents\Visual Studio 2015\Projects\FirmwareTestTool\PC\code\Output\Debug\Command Definitions";
       string pidFilePath = pidFolderPath + @"\USB, PID " + id.ToString("X4") + ".txt";
       TestClass test = new TestClass(id, pidFilePath); 
