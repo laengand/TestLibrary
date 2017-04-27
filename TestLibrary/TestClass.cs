@@ -143,9 +143,6 @@ namespace TestLibrary
       eventHandlerNames = new string[interpreter.CommandList.Count];
       foreach (CommandDefinition cmdDef in interpreter.CommandList)
       {
-        //string cmdName = cmdDef.AutoFileNameHeader;
-        //cmdName = cmdName.Remove(0, 5);
-        
         string className;
         string classDataName;
         if (cmdDef.EventType == EventType.NotEvent)
@@ -310,6 +307,10 @@ namespace TestLibrary
             code.Append("bulk = File.Open(bulkPath, FileMode.Open);\r\n");
             code.Append("}");
             code.Append("communication.SendCommand((UInt16)" + "0x" + cmdDef.CommandId.ToString("X4") + ", ref p, bulk, (int)bulk.Length);\r\n");
+            code.Append("if (bulk != null)");
+            code.Append("{");
+            code.Append("bulk.Close();\r\n");
+            code.Append("}");
           }
           else
           {

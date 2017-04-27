@@ -30,6 +30,8 @@ pidFilePath = [pidFolderPath '\USB, PID ' hexId '.txt'];
 
 %% Create Communication generator class 
 commGen = CommunicatorGenerator(id, pidFilePath);
+
+%% Get the instance of the generated class 
 deviceComm = commGen.generatedCommunicator;
     
 %% Create a ping test
@@ -38,4 +40,3 @@ test = PingTest(deviceComm);
 
 %% Run test
 test.Run
-

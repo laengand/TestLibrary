@@ -119,7 +119,14 @@ classContainer = sprintf('%s%s\r\n',classContainer, ...
 'end' newline]);            % end of classDef
 
 filename = [name '.m'];
-FID = fopen(filename,'w');
-fprintf(FID, '%s', classContainer);
-fclose(FID);
+if exist(filename, 'file') ~= 0
+    prompt = ['File ''' filename '''' ' already exists. Is it okay to overwrite? Y/N: ' ];
+    x = input(prompt,'s');
+    if(strcmp(lower(x),'y') == 1)
+    FID = fopen(filename,'w');
+    fprintf(FID, '%s', classContainer);
+    fclose(FID);        
+    end
+end
+
 end
