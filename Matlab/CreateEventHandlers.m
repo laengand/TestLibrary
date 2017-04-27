@@ -9,7 +9,7 @@ eventHandlers = sprintf('%send\r\n',eventHandlers);
 eventListeners = sprintf('function els = SetupEventListeners(obj,generatedClass)\r\n');
 first = 1;
 gClass = testClass.generatedCommunicator;
-for i=1:gClass.cmdNames.Length-1
+for i=1:gClass.cmdNames.Length
     
     if testClass.interpreter.CommandList.Item(i-1).EventType == IA.Common.StandardCommunication.Tools.EventType.NotEvent == 0
         eventName = char(gClass.cmdNames(i));
