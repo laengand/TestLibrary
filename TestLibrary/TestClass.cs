@@ -39,7 +39,7 @@ namespace TestLibrary
         }
         data.Write(realtimeData, 0, realtimeData.Length);
       }
-      public void SetEventReceiver(IStandardCommunication communication, string fullFilename, UInt32 readSize)
+      public void SetRealTimeEventReceiver(IStandardCommunication communication, string fullFilename, UInt32 readSize)
       {
         communication.SetEventReceiver(cmdDef.CommandId, (NewRealtimeEventDelegate)Handler);
         stream = new FileStream(fullFilename, FileMode.Open, FileAccess.Read);
@@ -57,30 +57,17 @@ namespace TestLibrary
     static private IStandardCommunication communication;
     static public string appPath;
     
-    public void SetEventReceiver(UInt16 cmdId, string filename, UInt32 readSize)
+    public void SetRealTimeEventReceiver(UInt16 cmdId, string filename, UInt32 readSize)
     {
       FileStream stream = null;
       RealTimeHandler realtimeHandler = new RealTimeHandler(interpreter.GetCommandDefinition(cmdId), stream);
-      realtimeHandler.SetEventReceiver(communication, filename, readSize); 
-    }
-
-    public bool Connect()
-    {
-      if (communication != null)
-        return communication.Connect(0);
-      else
-        return false;
-    }
-
-    public void Disconnect()
-    {
-      communication?.Disconnect();
+      realtimeHandler.SetRealTimeEventReceiver(communication, filename, readSize); 
     }
 
     ~CommunicatorGenerator()
     {
-      communication?.Disconnect();
-    } //end of Destructor
+    } 
+
     public CommunicatorGenerator(UInt16 id, string pidFilePath)
     {
       communication = new UsbCommunication(id);
@@ -126,7 +113,7 @@ namespace TestLibrary
       if (assembly != null)
       {
         Type t = assembly.GetType("TestLibrary.Communicator");
-        generatedCommunicator = Activator.CreateInstance(t, communication);
+        generatedCommunicator = Activator.CreateInstance(t, communication, interpreter);
         t.GetMethod("SetupEventReceivers").Invoke(generatedCommunicator, new object[] { });
       }
     }
@@ -134,16 +121,16 @@ namespace TestLibrary
     private string CreateClasses(ref CommandInterpreter interpreter)
     {
       System.Text.StringBuilder generatedClass = new System.Text.StringBuilder();
-      generatedClass.Append(@"using System;using IA.Common.StandardCommunication;
+      generatedClass.Append(@"using System;
+      using System.Collections.Generic;
+      using IA.Common.StandardCommunication;
       using IA.Common.StandardCommunication.Tools;
       using IA.Common.UsbCommunication;
       using System.IO; ");
       generatedClass.Append("namespace TestLibrary{ ");
       generatedClass.Append("public class Communicator{");
-      generatedClass.Append("static IStandardCommunication communication;");
-
-
-
+      generatedClass.Append("IStandardCommunication communication;");
+      
       System.Text.StringBuilder generatedCode = new System.Text.StringBuilder();
       System.Text.StringBuilder setupEventReceivers = new System.Text.StringBuilder();
       System.Text.StringBuilder dataclassDescription = new System.Text.StringBuilder();
@@ -358,12 +345,71 @@ namespace TestLibrary
 
       setupEventReceivers.Append("} ");
       generatedClass.Append(classDefinitions);
-      generatedClass.Append("public Communicator(){communication = null;}\r\n");
-      generatedClass.Append("public Communicator(IStandardCommunication comm){");
-      generatedClass.Append("communication = comm;\r\n");
+      generatedClass.Append("public List<CommandDefinition> commandList;\r\n");
+      generatedClass.Append("private CommandInterpreter interpreter;\r\n");
+      generatedClass.Append("public Communicator(){communication = null; commandList = null;}\r\n");
+      generatedClass.Append("public Communicator(IStandardCommunication communication, CommandInterpreter interpreter){");
+      generatedClass.Append("this.interpreter = interpreter;\r\n");
+      generatedClass.Append("this.communication = communication; this.commandList = interpreter.CommandList;\r\n");
+      
       generatedClass.Append(classInstances);
       generatedClass.Append("}\r\n");
+      generatedClass.Append(@"public bool Connect()
+      {
+      if (communication != null)
+        return communication.Connect(0);
+      else
+        return false;
+      }");
 
+      generatedClass.Append(@"public void Disconnect()
+      {
+        if (communication != null)
+          communication.Disconnect();
+      }");
+
+      generatedClass.Append(@"
+      private class RealTimeHandler
+      {
+        FileStream stream;
+        CommandDefinition cmdDef;
+        byte[] realtimeData;
+        public RealTimeHandler(CommandDefinition cmdDef, FileStream stream)
+        {
+          this.cmdDef = cmdDef;
+          this.stream = stream;
+        }
+        void Handler(ushort command, ref Parameters parameters, Stream data, int inBulkLength)
+        {
+          if (cmdDef.CommandType != CommandStatus.BulkReceived)
+            return;
+          int readBytes = stream.Read(realtimeData, 0, realtimeData.Length);
+          if (readBytes < realtimeData.Length)
+          {
+            stream.Seek(0, SeekOrigin.Begin);
+            stream.Read(realtimeData, readBytes, realtimeData.Length - readBytes);
+          }
+          data.Write(realtimeData, 0, realtimeData.Length);
+        }
+        public void SetRealTimeEventReceiver(IStandardCommunication communication, string fullFilename, UInt32 readSize)
+        {
+          communication.SetEventReceiver(cmdDef.CommandId, (NewRealtimeEventDelegate)Handler);
+          stream = new FileStream(fullFilename, FileMode.Open, FileAccess.Read);
+          if (readSize == 0)
+            realtimeData = new byte[stream.Length];
+          else
+            realtimeData = new byte[readSize];
+        }
+      }"
+      );
+      generatedClass.Append(@"
+      public void SetRealTimeEventReceiver(UInt16 cmdId, string filename, UInt32 readSize)
+      {
+        FileStream stream = null;
+        RealTimeHandler realtimeHandler = new RealTimeHandler(interpreter.GetCommandDefinition(cmdId), stream);
+        realtimeHandler.SetRealTimeEventReceiver(communication, filename, readSize); 
+      }"
+      );
       string cmdDes = "public string[] cmdDescriptions = new string[] {\r\n" + dataclassDescription + "\r\n};";
       string cmdN = "public string[] cmdNames = new string[] {\r\n" + cmdNames + "\r\n};";
       generatedClass.Append(setupEventReceivers.ToString());

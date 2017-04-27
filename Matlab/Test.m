@@ -28,40 +28,14 @@ id = hex2dec(hexId);
 pidFolderPath = 'C:\Users\laad\Documents\Visual Studio 2015\Projects\FirmwareTestTool\PC\code\Output\Debug\Command Definitions';
 pidFilePath = [pidFolderPath '\USB, PID ' hexId '.txt'];
 
-%% Create test class 
+%% Create Communication generator class 
 commGen = CommunicatorGenerator(id, pidFilePath);
-try
 deviceComm = commGen.generatedCommunicator;
-import TestLibrary.*;
-catch ex
-    ex.ExceptionObject.LoaderExceptions.Get(0).Message
-    error('Library or support file loading problem. Script halted')
-end
-
-%% Create default event handlers if needed
-% These should be modified to correspond to a desired action, when an event is received
-if exist(['EventHandlerClass0x' hexId '.m'],'file') == 0
-    CreateEventHandlers(id,commGen);
-    error('No event handlers existed. A default eventhandler class has been created')
-end
     
-%% Create instance of event handlers and set up listeners
-eventHandlers = EventHandlerClass0x0012(); % EventHandlerClass0x**** replace this with the desired PID
-els = eventHandlers.SetupEventListeners(deviceComm);
+%% Create a ping test
+CreateTestTemplate('PingTest', deviceComm, 'full');
+test = PingTest(deviceComm);  
 
-%% Connect to the device
-if commGen.Connect() == 0
-    error('Unable to connect to device. Reset the device.')
-end
-    
+%% Run test
+test.Run
 
-%% Perform test
-disp('Test is running. Hit a key to stop')
-deviceComm.C0000Ping.Send
-
-pause('on')
-pause
-pause('off')
-
-%% Disconnect from the device
-commGen.Disconnect();

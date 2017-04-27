@@ -1,4 +1,5 @@
 function CreateEventHandlers(id, testClass)
+warning('Deprecated function. Use ''CreateTestTemplate instead''')
 className = ['EventHandlerClass0x' dec2hex(id,4)];
 eventHandlers = sprintf('%s\r\n\r\n','%This is a generated file. Remove the .template extension prior to use.');
 eventHandlers = sprintf('%sclassdef %s < handle\r\n', eventHandlers, className);
