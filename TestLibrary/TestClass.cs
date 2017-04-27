@@ -15,7 +15,7 @@ using IA.Common.StandardCommunication.Tools;
 using IA.Common.UsbCommunication;
 namespace TestLibrary
 {
-  public class TestClass
+  public class CommunicatorGenerator
   {
     public class RealTimeHandler
     {
@@ -53,7 +53,7 @@ namespace TestLibrary
     public readonly CommandInterpreter interpreter;
     public Assembly assembly;
     public string[] eventHandlerNames;
-    public object GeneratedClass;
+    public object generatedCommunicator;
     static private IStandardCommunication communication;
     static public string appPath;
     
@@ -77,11 +77,11 @@ namespace TestLibrary
       communication?.Disconnect();
     }
 
-    ~TestClass()
+    ~CommunicatorGenerator()
     {
       communication?.Disconnect();
     } //end of Destructor
-    public TestClass(UInt16 id, string pidFilePath)
+    public CommunicatorGenerator(UInt16 id, string pidFilePath)
     {
       communication = new UsbCommunication(id);
       string pidFile = File.ReadAllText(pidFilePath);
@@ -96,7 +96,7 @@ namespace TestLibrary
       para.ReferencedAssemblies.Add(appPath + @"\CommunicationTools.dll");
       para.ReferencedAssemblies.Add(appPath + @"\UsbCommunication.dll");
 
-      para.OutputAssembly = appPath + @"\GeneratedClass0x" + id.ToString("X4") + ".dll";
+      para.OutputAssembly = appPath + @"\GeneratedCommunicator0x" + id.ToString("X4") + ".dll";
 
       string code = CreateClasses(ref interpreter);
       string debugFile = appPath + @"\debugFile.cs";
@@ -125,9 +125,9 @@ namespace TestLibrary
       assembly = Assembly.LoadFrom(para.OutputAssembly);
       if (assembly != null)
       {
-        Type t = assembly.GetType("TestLibrary.GeneratedClass");
-        GeneratedClass = Activator.CreateInstance(t, communication);
-        t.GetMethod("SetupEventReceivers").Invoke(GeneratedClass, new object[] { });
+        Type t = assembly.GetType("TestLibrary.Communicator");
+        generatedCommunicator = Activator.CreateInstance(t, communication);
+        t.GetMethod("SetupEventReceivers").Invoke(generatedCommunicator, new object[] { });
       }
     }
 
@@ -138,17 +138,18 @@ namespace TestLibrary
       using IA.Common.StandardCommunication.Tools;
       using IA.Common.UsbCommunication;
       using System.IO; ");
-      generatedClass.Append("namespace TestLibrary{ public class GeneratedClass{");
-      generatedClass.Append("IStandardCommunication communication;");
-   
-      generatedClass.Append("public GeneratedClass(){this.communication = null;}\r\n");
-      generatedClass.Append("public GeneratedClass(IStandardCommunication communication){this.communication = communication;}\r\n");
+      generatedClass.Append("namespace TestLibrary{ ");
+      generatedClass.Append("public class Communicator{");
+      generatedClass.Append("static IStandardCommunication communication;");
+
+
 
       System.Text.StringBuilder generatedCode = new System.Text.StringBuilder();
       System.Text.StringBuilder setupEventReceivers = new System.Text.StringBuilder();
       System.Text.StringBuilder dataclassDescription = new System.Text.StringBuilder();
       System.Text.StringBuilder cmdNames = new System.Text.StringBuilder();
-
+      System.Text.StringBuilder classInstances = new System.Text.StringBuilder();
+      System.Text.StringBuilder classDefinitions = new System.Text.StringBuilder();
       setupEventReceivers.Append("public void SetupEventReceivers(){");
 
       int eventHandlerNameIndex = 0;
@@ -157,7 +158,6 @@ namespace TestLibrary
       {
         //string cmdName = cmdDef.AutoFileNameHeader;
         //cmdName = cmdName.Remove(0, 5);
-        string cmdName;
         
         string className;
         string classDataName;
@@ -166,22 +166,33 @@ namespace TestLibrary
         else
           className = formatEvent(cmdDef);
 
-        cmdNames.Append(@"@""" + className + @"""");
+        string cmdName = className.Remove(0, 5);
+        className = className.Substring(0, 5);
+
+        string classInstanceName = cmdDef.EventType == EventType.NotEvent ? className + cmdName : className;
+        
+        classDefinitions.Append("public " + className + "." + className + " " + classInstanceName + ";\r\n");
+        classInstances.Append(classInstanceName + " = new " + className + "." + className + "(communication); \r\n");
+
+        cmdNames.Append(@"@""" + cmdName + @"""");
         cmdNames.Append(",\r\n");
-        classDataName = className + "Data";
+        classDataName = "Data";
         generatedCode.Append("\r\n/* -------------------- 0x" + cmdDef.CommandId.ToString("X4") + "-------------------- */\r\n");
-        generatedCode.Append(CreateEnums(cmdDef));
+
+        System.Text.StringBuilder cmdNameSpace = new System.Text.StringBuilder();
+        System.Text.StringBuilder cmdClass = new System.Text.StringBuilder();
         // DATA CLASS START
         System.Text.StringBuilder dataclass = new System.Text.StringBuilder();
 
         dataclass.Append("public class " + classDataName + "\r\n{\r\n");
+
         dataclassDescription.Append(@"@""");
         dataclassDescription.Append("Parameters\r\n");
         for (int i = 0; i < cmdDef.Parameters.Count; i++)
         {
           ParameterDefinition para = cmdDef.Parameters[i];
-          string parameterName = formatParameter(para.Discription, "p" + i.ToString() + "_", "");
-          string enumName = className + "_" + parameterName;
+          string parameterName = formatParameter(para.Discription, "p" + i.ToString(), "");
+          string enumName = "e" + parameterName;
           dataclass.Append("public " + (para.IsEnum ? enumName : para.Type.ToString()) + " " + parameterName + ";\r\n");
           dataclassDescription.Append(parameterName + "\r\n");
         }
@@ -189,34 +200,43 @@ namespace TestLibrary
         for (int i = 0; i < cmdDef.ReplyParameters.Count; i++)
         {
           ParameterDefinition para = cmdDef.ReplyParameters[i];
-          string parameterName = formatReplyParameter(para.Discription, "p" + i.ToString() + "_", "");
-          string enumName = className + "_" + parameterName;
+          string parameterName = formatReplyParameter(para.Discription, "p" + i.ToString(), "");
+          string enumName = "e" + parameterName;
           dataclass.Append("public " + (para.IsEnum ? enumName : para.Type.ToString()) + " " + parameterName + ";\r\n");
-          dataclassDescription.Append(parameterName+ "\r\n");
+          dataclassDescription.Append(parameterName + "\r\n");
         }
-        
-        if ((cmdDef.CommandId >= 0x4000) && (cmdDef.CommandId <= 0xBFFF))
+
+        if (cmdDef.CommandType == CommandStatus.BulkSent || cmdDef.CommandType == CommandStatus.BulkReceived)
         {
           dataclass.Append("public byte[] bulk;");
         }
         dataclass.Append("} ");
         dataclassDescription.Append(@"""" + ",\r\n");
-        generatedCode.Append(dataclass);
+        cmdNameSpace.Append("namespace " + className + "\r\n{\r\n");
+        
+        cmdClass.Append(CreateEnums(cmdDef));
+        cmdClass.Append("public class " + className + "\r\n{\r\n");
+        cmdClass.Append("public " + className + "(){communication = null;}\r\n");
+        cmdClass.Append("public " + className + "(IStandardCommunication comm){communication = comm;}\r\n");
+        cmdClass.Append("private IStandardCommunication communication;\r\n");
+        
+        cmdNameSpace.Append(dataclass);
+
+        //generatedCode.Append(cmdClass);
         // DATA CLASS END
 
         if (cmdDef.EventType != EventType.NotEvent)
         {
+          System.Text.StringBuilder eventArgs = new System.Text.StringBuilder();
           // ARGS CLASS START
-          string classNameArgs = className + "Args";
-          generatedCode.Append("public class " + classNameArgs + " : EventArgs{");
-          generatedCode.Append("private readonly " + classDataName + " _i;\r\n");
-          generatedCode.Append("public " + classDataName + " Data{ get { return _i; } }\r\n");
-          generatedCode.Append("public " + classNameArgs + " (" + classDataName + " t) { _i = t; }\r\n");
-          generatedCode.Append("} ");
-          // ARGS CLASS END
 
-          generatedCode.Append("public event EventHandler<" + classNameArgs + "> " + className + ";\r\n");
-          eventHandlerNames[eventHandlerNameIndex++] = className;
+          string classNameArgs = "Args";
+          eventArgs.Append("public class " + classNameArgs + " : EventArgs{");
+          eventArgs.Append("private readonly " + classDataName + " _i;\r\n");
+          eventArgs.Append("public " + classDataName + " Data{ get { return _i; } }\r\n");
+          eventArgs.Append("public " + classNameArgs + " (" + classDataName + " t) { _i = t; }\r\n");
+          eventArgs.Append("} ");
+          // ARGS CLASS END
 
           // EVENT CALLBACKS START
           System.Text.StringBuilder eventCallback = new System.Text.StringBuilder();
@@ -227,36 +247,45 @@ namespace TestLibrary
           for (int i = 0; i < cmdDef.Parameters.Count; i++)
           {
             ParameterDefinition para = cmdDef.Parameters[i];
-            string parameterName = formatParameter(para.ToString(), "p" + i.ToString() + "_", "");
-            string enumName = className + "_" + parameterName;
+            string parameterName = formatParameter(para.ToString(), "p" + i.ToString() + "", "");
+            string enumName = "e" + parameterName;
             code.Append("d." + parameterName + " = " + (para.IsEnum ? "(" + enumName + ")" : "") + "parameters." + GetParameterReadString(para) + ";\r\n");
           }
 
-          if ((cmdDef.CommandId >= 0x6000) && (cmdDef.CommandId <= 0x7FFF))
+          //if ((cmdDef.CommandId >= 0x6000) && (cmdDef.CommandId <= 0x7FFF))
+          if(cmdDef.CommandType == CommandStatus.BulkReceived)
           {
             code.Append("d.bulk = new byte[bulkLength];\r\n");
           }
-          else if ((cmdDef.CommandId >= 0xA000) && (cmdDef.CommandId <= 0xBFFF))
+          //else if ((cmdDef.CommandId >= 0xA000) && (cmdDef.CommandId <= 0xBFFF))
+          else if (cmdDef.CommandType == CommandStatus.BulkSent)
           {
             code.Append("d.bulk = new byte[bulkLength];\r\n");
             code.Append("bulk.Position = 0;\r\n");
             code.Append("bulk.Read(d.bulk, 0, bulkLength);\r\n");
           }
-
-          code.Append("if(" + className + " != null)");
+          string eventHandlerName = "Handler";
+          code.Append("if(" + eventHandlerName + " != null)");
           code.Append("{");
-          code.Append(className + ".Invoke(this, new " + classNameArgs + "(d));\r\n");
+          code.Append(eventHandlerName + ".Invoke(this, new " + classNameArgs + "(d));\r\n");
           code.Append("}");
 
-          string onEvent = "OnEvent0x" + cmdDef.CommandId.ToString("X");
-          eventCallback.Append("private void " + onEvent + "(UInt16 command, Parameters parameters, Stream bulk, int bulkLength)");
+          string onEvent = "OnEvent";
+          eventCallback.Append("public void " + onEvent + "(UInt16 command, Parameters parameters, Stream bulk, int bulkLength)");
           eventCallback.Append("{");
           eventCallback.Append(code);
           eventCallback.Append("}");
 
-          generatedCode.Append(eventCallback);
+          cmdClass.Append("public event EventHandler<" + classNameArgs + "> " + eventHandlerName + ";\r\n");
+          eventHandlerNames[eventHandlerNameIndex++] = className;
+          cmdNameSpace.Append(eventArgs);
+
+
+          cmdClass.Append(eventCallback);
+          //cmdClass.Append("\r\n}\r\n");
+          //generatedCode.Append(cmdClass);
           // EVENT CALLBACKS END
-          setupEventReceivers.Append("communication.SetEventReceiver(0x" + cmdDef.CommandId.ToString("X") + ", new NewEventDelegate(" + onEvent + "));\r\n");
+          setupEventReceivers.Append("communication.SetEventReceiver(0x" + cmdDef.CommandId.ToString("X4") + ", new NewEventDelegate(" + "this." + classInstanceName + "." + onEvent + "));\r\n");
         }
         else
         {
@@ -269,14 +298,14 @@ namespace TestLibrary
 
           for (int i = 0; i < cmdDef.Parameters.Count; i++)
           {
-            string parameterName = formatParameter(cmdDef.Parameters[i].ToString(), "p" + i.ToString() + "_", "");
-            string enumName = className + "_" + parameterName;
+            string parameterName = formatParameter(cmdDef.Parameters[i].ToString(), "p" + i.ToString() + "", "");
+            string enumName = "e" + parameterName;
             inputParameters.Append((cmdDef.Parameters[i].IsEnum ? enumName : cmdDef.Parameters[i].Type.ToString()) + " " + parameterName + ((i < (cmdDef.Parameters.Count - 1)) ? "," : ""));
             code.Append("p.Write(" + parameterName + ");" + "d." + parameterName + " = " + parameterName + ";\r\n");
           }
-
-
-          if ((cmdDef.CommandId >= 0x4000) && (cmdDef.CommandId <= 0x5FFF))
+          
+            //if ((cmdDef.CommandId >= 0x4000) && (cmdDef.CommandId <= 0x5FFF))
+          if (cmdDef.CommandType == CommandStatus.BulkReceived)
           {
             code.Append("Stream bulk = new MemoryStream();\r\n");
             code.Append("communication.SendCommand((UInt16)" + "0x" + cmdDef.CommandId.ToString("X4") + ", ref p, bulk);\r\n");
@@ -284,7 +313,8 @@ namespace TestLibrary
             code.Append("bulk.Position = 0;\r\n");
             code.Append("bulk.Read(d.bulk, 0, (int)bulk.Length);\r\n");
           }
-          else if ((cmdDef.CommandId >= 0x8000) && (cmdDef.CommandId <= 0xBFFF))
+          //else if ((cmdDef.CommandId >= 0x8000) && (cmdDef.CommandId <= 0xBFFF))
+          else if (cmdDef.CommandType == CommandStatus.BulkSent)
           {
             inputParameters.Append((cmdDef.Parameters.Count > 0 ? "," : "") + "System.String bulkPath");
             code.Append("Stream bulk = null;\r\n");
@@ -302,28 +332,50 @@ namespace TestLibrary
 
           for (int i = 0; i < cmdDef.ReplyParameters.Count; i++)
           {
-            string parameterName = formatReplyParameter(cmdDef.ReplyParameters[i].ToString(), "p" + i.ToString() + "_", "");
+            string parameterName = formatReplyParameter(cmdDef.ReplyParameters[i].ToString(), "p" + i.ToString(), "");
 
-            string enumName = className + "_" + parameterName;
+            string enumName = "e" + parameterName;
             code.Append("d." + parameterName + " = " + (cmdDef.ReplyParameters[i].IsEnum ? "(" + enumName + ")" : "") + "p." + GetParameterReadString(cmdDef.ReplyParameters[i]) + ";\r\n");
           }
 
           code.Append("return d;");
-          wrapper.Append("public " + classDataName + " " + className);
+          wrapper.Append("public " + classDataName + " Send");
           wrapper.Append("(" + inputParameters + ")");
           wrapper.Append("{");
           wrapper.Append(code);
           wrapper.Append("}");
-          generatedCode.Append(wrapper);
-
+          cmdClass.Append(wrapper);
+          
           // COMMAND WRAPPERS END
         }
+        cmdClass.Append("\r\n}\r\n"); // class
+        cmdNameSpace.Append(cmdClass);
+        cmdNameSpace.Append("\r\n}\r\n");
+        
+        generatedCode.Append(cmdNameSpace);
+
       }
-      
+
       setupEventReceivers.Append("} ");
+      generatedClass.Append(classDefinitions);
+      generatedClass.Append("public Communicator(){communication = null;}\r\n");
+      generatedClass.Append("public Communicator(IStandardCommunication comm){");
+      generatedClass.Append("communication = comm;\r\n");
+      generatedClass.Append(classInstances);
+      generatedClass.Append("}\r\n");
+
       string cmdDes = "public string[] cmdDescriptions = new string[] {\r\n" + dataclassDescription + "\r\n};";
       string cmdN = "public string[] cmdNames = new string[] {\r\n" + cmdNames + "\r\n};";
-      string rtn = generatedClass.ToString() + cmdN + cmdDes + generatedCode.ToString() + setupEventReceivers.ToString() + "}}";
+      generatedClass.Append(setupEventReceivers.ToString());
+      
+      generatedClass.Append(cmdN + cmdDes);
+      generatedClass.Append("}\r\n");
+      generatedClass.Append("}\r\n");
+      //generatedClass.Append("namespace TestLibrary{\r\n");
+      generatedClass.Append(generatedCode.ToString());
+      //generatedClass.Append("}\r\n");
+
+      string rtn = generatedClass.ToString();
       return rtn;
     }
     private string GetParameterType(ParameterDefinition para)
@@ -439,7 +491,7 @@ namespace TestLibrary
 
     private string formatCmd(CommandDefinition cmdDef)
     { 
-      return "Cmd" + formatCmd(cmdDef.AutoFileNameHeader);
+      return "C" + formatCmd(cmdDef.AutoFileNameHeader);
     }
 
     private string formatCmd(string cmd)
@@ -454,7 +506,7 @@ namespace TestLibrary
     }
     private string formatEvent(CommandDefinition cmdDef)
     {
-      return "Event" + formatCmd(cmdDef.AutoFileNameHeader);
+      return "E" + formatCmd(cmdDef.AutoFileNameHeader);
     }
 
     private string CreateEnum(IList<ParameterDefinition> parameters, string prefix, string suffix)
@@ -469,7 +521,7 @@ namespace TestLibrary
 
         string parameterName = formatParameter(para.Discription, prefix + "p" + i.ToString() + suffix, ""); // the names prefix and suffix does not make much sense when both are used as prefix together with the paramters number
 
-        code.Append("public enum " + parameterName + ":" + GetParameterType(para) + "{");
+        code.Append("public enum " + "e" + parameterName + ":" + GetParameterType(para) + "{");
 
         for (int j = 0; j < para.Enums.Count; j++)
         {
@@ -495,7 +547,7 @@ namespace TestLibrary
               break;
           }
 
-          string enumValueName = "e" + j + "_" + formatEnum(e.ToString());
+          string enumValueName = "e" + j + "" + formatEnum(e.ToString());
 
 
           code.Append(enumValueName + " = " + enumValue + ((j != para.Enums.Count - 1) ? ", " : ""));
@@ -515,8 +567,8 @@ namespace TestLibrary
       else
         name = formatEvent(cmdDef);
 
-      code.Append(CreateEnum(cmdDef.Parameters, name + "_","_"));
-      code.Append(CreateEnum(cmdDef.ReplyParameters, name + "_", "_r"));
+      code.Append(CreateEnum(cmdDef.Parameters, "",""));
+      code.Append(CreateEnum(cmdDef.ReplyParameters, "", "r"));
 
       return code.ToString();
     }

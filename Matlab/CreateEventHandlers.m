@@ -14,11 +14,12 @@ for i=1:gClass.cmdNames.Length-1
     if testClass.interpreter.CommandList.Item(i-1).EventType == IA.Common.StandardCommunication.Tools.EventType.NotEvent == 0
         eventName = char(gClass.cmdNames(i));
         id = ['0x' dec2hex(testClass.interpreter.CommandList.Item(i-1).CommandId)];
+        hexid = dec2hex(testClass.interpreter.CommandList.Item(i-1).CommandId);
         if first == 1
-            eventListeners = [eventListeners 'els(1) = event.listener(generatedClass,' '''' eventName '''' ',@obj.' eventName ');'];
+            eventListeners = [eventListeners 'els(1) = event.listener(generatedClass.E' hexid ',' '''' 'Handler''' ',@obj.' eventName ');'];
             first = 0;
         else
-            eventListeners = [eventListeners 'els(end + 1) = event.listener(generatedClass,' '''' eventName '''' ',@obj.' eventName ');'];
+            eventListeners = [eventListeners 'els(end + 1) = event.listener(generatedClass.E' hexid ',' '''' 'Handler''' ',@obj.' eventName ');'];
         end
 
         eventListeners = sprintf('%s\r\n',eventListeners);
