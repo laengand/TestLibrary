@@ -32,10 +32,8 @@ have to change the PathToLibrary variable in your script.
 General structure of the Test.m file:
 1.  Load TestLibrary
 2.  Set the PID to use
-3.  Create TestClass and generate a class for the given device
-4.  Connect to the device
-5.  Perform test
-6.  Disconnect from the device
+3.  Create a Communicator Generator and generate a Communicator for the given device
+4.  Perform test
   
  -- Usage --
 1.  Make a copy of the Test.m and call it something, <script name>.m.
@@ -46,25 +44,19 @@ General structure of the Test.m file:
 3.  Run the <script name>.m 
   
 4.  As the device will be sending events at some point, Matlab will need 
-    handlers for these events. When the <script name>.m is run it will check if
-    any event handlers for the exist given PID. If none exists, it will 
-    generate a set of default event handlers in a file called 
-    EventHandlerClass0x<PID>.m.template e.g EventHandlerClass0x0012.m.template.
-    An error will be reported since no event handlers existed. 
-    In order to use generated event handlers, you have to remove the .template 
-    extension and rerun the <script name>.m.
-  
-5.  The script will attempt to connect to the device and report an error if 
+    handlers for these events. Use the CreateTestTemplate.m to create a template 
+    for a test. By specifying 'full' in the opt parameter, a complete set of 
+    event callbacks will be generated. Specifying 'bare' will only generate 
+    a minimum of functions for the test. This is useful if you don't want 
+    your test to contain all your event callbacks.
+    In the default script, a ping test generated and performed.
+   
+5.  The ping test will attempt to connect to the device and report an error if 
     the connection could not be established.
   
-6.  After a successfull connection, the script will send whatever commands you 
-    have specified. Commands for the given device can be access through 
-    device.<commmand name>. If the command contains enumerators, these can be 
-    accessed through TestLibrary.<command name>.<enumerator name>. Matlab will 
-    list the available commands after TestLibrary. is entered folowed by a 
-    <TAB>.
-  
-7.  After having sent all the commands, the script will enter a paused state 
+6.  After a successfull connection, the test will send a ping command
+
+7.  After having sent all the commands, the ping test will enter a paused state 
     where it can still receive events. To exit this state, hit a random key 
     when the command windows is selected.
   
@@ -72,11 +64,18 @@ General structure of the Test.m file:
 
  -- Note --
 Steps when changing the PID file.
-1.  Delete the GeneratedClass0x<PID>.dll, you might have to close Matlab if the
+1.  Delete the GeneratedCommunicator0x<PID>.dll, you might have to close Matlab if the
     dll has already been loaded into memory
-2.  Rerun your script. This will generate a new GeneratedClass0x<PID>.dll
+2.  Rerun your script. This will generate a new GeneratedCommunicator0x<PID>.dll
 
 Steps when setting up realTime event handlers
-1.  Call test.SetEventReceiver(hex2dec('<hex id>')), <file path>, receive size)
+1.  Call deviceComm.SetRealTimeEventReceiver(hex2dec('<hex id>')), <file path>, receive size)
     before sending commands which will initiate realtime events e.g. 
-    test.SetEventReceiver(hex2dec('6400'), '..\Scripts\Eagles HotelCalifornia_f32.aiff', 4096)
+    deviceComm.SetRealTimeEventReceiver(hex2dec('6400'), '..\Scripts\Eagles HotelCalifornia_f32.aiff', 4096)
+
+Sending Commands
+    Commands for the given device can be accessed through 
+    deviceComm.<commmand name>.Send. If the command contains enumerators, these can be 
+    accessed through C<command id>.<enumerator name>.<enumerator value> Matlab will 
+    list the available commands after C is entered folowed by a 
+    <TAB>.    
