@@ -127,6 +127,10 @@ if exist(filename, 'file') ~= 0
     fprintf(FID, '%s', classContainer);
     fclose(FID);        
     end
+else
+    FID = fopen(filename,'w');
+    fprintf(FID, '%s', classContainer);
+    fclose(FID);        
 end
 
 end
