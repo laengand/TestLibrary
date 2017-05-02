@@ -118,7 +118,7 @@ namespace TestLibrary
       }
       
       if (false) // attempt to load generated dll in separate appdomain
-      {
+      { 
         AppDomainSetup domaininfo = new AppDomainSetup();
         domaininfo.ApplicationBase = System.Environment.CurrentDirectory;
         Evidence adevidence = AppDomain.CurrentDomain.Evidence;
@@ -336,11 +336,21 @@ namespace TestLibrary
             //if ((cmdDef.CommandId >= 0x4000) && (cmdDef.CommandId <= 0x5FFF))
           if (cmdDef.CommandType == CommandStatus.BulkReceived)
           {
+            inputParameters.Append((cmdDef.Parameters.Count > 0 ? "," : "") + "System.String bulkPath");
+            rawInputParameters.Append((cmdDef.Parameters.Count > 0 ? "," : "") + "System.String bulkPath");
+            passedInputParameters.Append((cmdDef.Parameters.Count > 0 ? "," : "") + "bulkPath");
             code.Append("Stream bulk = new MemoryStream();\r\n");
+
             code.Append("communication.SendCommand((UInt16)" + "0x" + cmdDef.CommandId.ToString("X4") + ", ref p, bulk);\r\n");
             code.Append("d.bulk = new byte[bulk.Length];\r\n");
             code.Append("bulk.Position = 0;\r\n");
             code.Append("bulk.Read(d.bulk, 0, (int)bulk.Length);\r\n");
+            code.Append("if (bulkPath != null)");
+            code.Append("{");
+            code.Append("FileStream bulkTofile = File.OpenWrite(bulkPath);\r\n");
+            code.Append("bulk.CopyTo(bulkTofile);\r\n");
+            code.Append("bulkTofile.Close();\r\n");
+            code.Append("}");
           }
           //else if ((cmdDef.CommandId >= 0x8000) && (cmdDef.CommandId <= 0xBFFF))
           else if (cmdDef.CommandType == CommandStatus.BulkSent)
