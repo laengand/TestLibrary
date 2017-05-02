@@ -74,7 +74,8 @@ for i=1:deviceComm.commandList.Count
       
         func = sprintf('%s %s %s\r\n','%%',id, eventName);
         
-        paraDesc = strread(char(deviceComm.cmdDescriptions(i)), '%s', 'delimiter', sprintf('\n'));
+        paraDesc = textscan(char(deviceComm.cmdDescriptions(i)), '%s', 'delimiter', sprintf('\n'));
+        paraDesc = paraDesc{1};
         para = [];
         for j = 1:numel(paraDesc)
             if strcmp(char(paraDesc(j)),'Parameters') == 1 || strcmp(char(paraDesc(j)),'Reply') == 1

@@ -13,6 +13,8 @@ using System.Text.RegularExpressions;
 using IA.Common.StandardCommunication;
 using IA.Common.StandardCommunication.Tools;
 using IA.Common.UsbCommunication;
+using System.Security.Policy;
+
 namespace TestLibrary
 {
   public class CommunicatorGenerator
@@ -56,6 +58,7 @@ namespace TestLibrary
     public object generatedCommunicator;
     static private IStandardCommunication communication;
     static public string appPath;
+    private AppDomain appDom;
     
     public void SetRealTimeEventReceiver(UInt16 cmdId, string filename, UInt32 readSize)
     {
@@ -66,7 +69,12 @@ namespace TestLibrary
 
     ~CommunicatorGenerator()
     {
+      
     } 
+    public void Dispose()
+    {
+      //AppDomain.Unload(appDom);
+    }
 
     public CommunicatorGenerator(UInt16 id, string pidFilePath)
     {
@@ -108,16 +116,48 @@ namespace TestLibrary
           throw new System.InvalidOperationException("Errors during compilation: " + errors + "\r\nWarnings: " + warnings);
         }
       }
-
-      assembly = Assembly.LoadFrom(para.OutputAssembly);
-      if (assembly != null)
+      
+      if (false) // attempt to load generated dll in separate appdomain
       {
-        Type t = assembly.GetType("TestLibrary.Communicator");
-        generatedCommunicator = Activator.CreateInstance(t, communication, interpreter);
+        AppDomainSetup domaininfo = new AppDomainSetup();
+        domaininfo.ApplicationBase = System.Environment.CurrentDirectory;
+        Evidence adevidence = AppDomain.CurrentDomain.Evidence;
+        appDom = AppDomain.CreateDomain("CommDomain", adevidence, domaininfo);
+
+        Type t = typeof(Proxy);
+        Proxy p = (Proxy)appDom.CreateInstanceAndUnwrap(t.Assembly.Location, t.FullName);
+
+        assembly = p.GetAssembly(para.OutputAssembly);
+        t = assembly.GetType("TestLibrary.Communicator");
+        generatedCommunicator = Activator.CreateInstance(t, id, pidFile);
         t.GetMethod("SetupEventReceivers").Invoke(generatedCommunicator, new object[] { });
+
+      }
+      else
+      {
+        assembly = Assembly.LoadFrom(para.OutputAssembly);
+        if (assembly != null)
+        {
+          Type t = assembly.GetType("TestLibrary.Communicator");
+          generatedCommunicator = Activator.CreateInstance(t, id, pidFile);
+          t.GetMethod("SetupEventReceivers").Invoke(generatedCommunicator, new object[] { });
+        }
       }
     }
-
+    public class Proxy : MarshalByRefObject
+    {
+      public Assembly GetAssembly(string assemblyPath)
+      {
+        try
+        {
+          return Assembly.LoadFrom(assemblyPath);
+        }
+        catch (Exception ex)
+        {
+          throw new InvalidOperationException(ex.Message);
+        }
+      }
+    }
     private string CreateClasses(ref CommandInterpreter interpreter)
     {
       System.Text.StringBuilder generatedClass = new System.Text.StringBuilder();
@@ -128,7 +168,7 @@ namespace TestLibrary
       using IA.Common.UsbCommunication;
       using System.IO; ");
       generatedClass.Append("namespace TestLibrary{ ");
-      generatedClass.Append("public class Communicator{");
+      generatedClass.Append("public class Communicator : MarshalByRefObject{");
       generatedClass.Append("IStandardCommunication communication;");
       
       System.Text.StringBuilder generatedCode = new System.Text.StringBuilder();
@@ -275,7 +315,10 @@ namespace TestLibrary
         {
           // COMMAND WRAPPERS START
           StringBuilder inputParameters = new StringBuilder();
-          StringBuilder wrapper = new StringBuilder();
+          StringBuilder rawInputParameters = new StringBuilder();
+          StringBuilder passedInputParameters = new StringBuilder();
+          StringBuilder cmdWrapper = new StringBuilder();
+          StringBuilder rawWrapper = new StringBuilder();
           StringBuilder code = new StringBuilder();
           code.Append("Parameters p = new Parameters();\r\n");
           code.Append(classDataName + " d = new " + classDataName + "();\r\n");
@@ -285,6 +328,8 @@ namespace TestLibrary
             string parameterName = formatParameter(cmdDef.Parameters[i].ToString(), "p" + i.ToString() + "", "");
             string enumName = "e" + parameterName;
             inputParameters.Append((cmdDef.Parameters[i].IsEnum ? enumName : cmdDef.Parameters[i].Type.ToString()) + " " + parameterName + ((i < (cmdDef.Parameters.Count - 1)) ? "," : ""));
+            rawInputParameters.Append(cmdDef.Parameters[i].Type.ToString() + " " + parameterName + ((i < (cmdDef.Parameters.Count - 1)) ? "," : ""));
+            passedInputParameters.Append((cmdDef.Parameters[i].IsEnum ? "(" + enumName + ")" : "") + parameterName + ((i < (cmdDef.Parameters.Count - 1)) ? "," : ""));
             code.Append("p.Write(" + parameterName + ");" + "d." + parameterName + " = " + parameterName + ";\r\n");
           }
           
@@ -301,6 +346,8 @@ namespace TestLibrary
           else if (cmdDef.CommandType == CommandStatus.BulkSent)
           {
             inputParameters.Append((cmdDef.Parameters.Count > 0 ? "," : "") + "System.String bulkPath");
+            rawInputParameters.Append((cmdDef.Parameters.Count > 0 ? "," : "") + "System.String bulkPath");
+            passedInputParameters.Append((cmdDef.Parameters.Count > 0 ? "," : "") + "bulkPath");
             code.Append("Stream bulk = null;\r\n");
             code.Append("if (bulkPath != null)");
             code.Append("{");
@@ -327,12 +374,22 @@ namespace TestLibrary
           }
 
           code.Append("return d;");
-          wrapper.Append("public " + classDataName + " Send");
-          wrapper.Append("(" + inputParameters + ")");
-          wrapper.Append("{");
-          wrapper.Append(code);
-          wrapper.Append("}");
-          cmdClass.Append(wrapper);
+          cmdWrapper.Append("public " + classDataName + " Send");
+          cmdWrapper.Append("(" + inputParameters + ")");
+          cmdWrapper.Append("{");
+          cmdWrapper.Append(code);
+          cmdWrapper.Append("}");
+
+          if (inputParameters.ToString() != "" && inputParameters.ToString() != rawInputParameters.ToString())
+          {
+            rawWrapper.Append("public " + classDataName + " Send");
+            rawWrapper.Append("(" + rawInputParameters + ")");
+            rawWrapper.Append("{");
+            rawWrapper.Append("return Send (" + passedInputParameters + ");\r\n");
+            rawWrapper.Append("}");
+            cmdClass.Append(rawWrapper);
+          }
+          cmdClass.Append(cmdWrapper);
           
           // COMMAND WRAPPERS END
         }
@@ -349,9 +406,10 @@ namespace TestLibrary
       generatedClass.Append("public List<CommandDefinition> commandList;\r\n");
       generatedClass.Append("private CommandInterpreter interpreter;\r\n");
       generatedClass.Append("public Communicator(){communication = null; commandList = null;}\r\n");
-      generatedClass.Append("public Communicator(IStandardCommunication communication, CommandInterpreter interpreter){");
-      generatedClass.Append("this.interpreter = interpreter;\r\n");
-      generatedClass.Append("this.communication = communication; this.commandList = interpreter.CommandList;\r\n");
+      generatedClass.Append("public Communicator(UInt16 id, string pidFile){");
+      generatedClass.Append(@"this.communication = new UsbCommunication(id);
+      interpreter = new CommandInterpreter(pidFile);
+      this.commandList = interpreter.CommandList;");
       
       generatedClass.Append(classInstances);
       generatedClass.Append("}\r\n");
