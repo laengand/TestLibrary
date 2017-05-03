@@ -1,12 +1,12 @@
 function ConvertTesttoolScript(matlabScriptName, deviceComm, testToolScriptPath)
-%UNTITLED2 Summary of this function goes here
-%   Detailed explanation goes here
-    newline = char(10);
+% ConvertTesttoolScript 
+% Script to convert a Testtool script into a corresponding matlab script
+    newline = [char(13) char(10)];
     generatedScript = ['function ' matlabScriptName '(deviceComm)' newline];
     testToolScript = fopen(testToolScriptPath,'r');
     while ~feof(testToolScript)
         tlineOrig = fgets(testToolScript);
-        addNewline = any(tlineOrig == newline);
+        addNewline = any(strfind(tlineOrig,newline));
         tlineOrig = strtrim(tlineOrig);
         if(~isempty(tlineOrig))
             tline = textscan(tlineOrig, '%s', 'Delimiter', sprintf(' '));
@@ -21,11 +21,8 @@ function ConvertTesttoolScript(matlabScriptName, deviceComm, testToolScriptPath)
                 code = convertCmd(deviceComm, tlineOrig);
                 generatedScript = [generatedScript code];
             elseif(strncmpi(tline{1}, 'RealtimeEvent',length('RealtimeEvent')))
-                input = GetInputParameters(deviceComm, tlineOrig(length('RealtimeEvent')+1:end));
-%                 
-%                 input = ['hex2dec(''' tline{2} '''),' tline{3:end}];
-%                 input = strrep(input,'"','''');
-                generatedScript = [generatedScript 'deviceComm.SetRealTimeEventReceiver(' input ');'];
+                inputPara = GetInputParameters(deviceComm, tlineOrig(length('RealtimeEvent')+1:end));
+                generatedScript = [generatedScript 'deviceComm.SetRealTimeEventReceiver(' inputPara ');'];
             end
         end 
         if(addNewline)
@@ -35,13 +32,27 @@ function ConvertTesttoolScript(matlabScriptName, deviceComm, testToolScriptPath)
     generatedScript = [generatedScript 'end' newline];
     fclose(testToolScript); 
     
+    filename = [matlabScriptName '.m'];
+    if exist(filename, 'file') ~= 0
+        prompt = ['File ''' filename '''' ' already exists. Is it okay to overwrite? Y/N: ' ];
+        x = input(prompt,'s');
+        if(strcmpi(x,'y') == 1)
+            matlabScript = fopen(filename,'w');
+            fprintf(matlabScript, '%s', generatedScript);
+            fclose(matlabScript);        
+        end
+    else
+        matlabScript = fopen(filename,'w');
+        fprintf(matlabScript, '%s', generatedScript);
+        fclose(matlabScript);        
+    end
+
     matlabScript = fopen([matlabScriptName '.m'],'w');
     fprintf(matlabScript , '%s', generatedScript);
     fclose(matlabScript); 
 end
 
 function code = convertCmd(deviceComm,tlineOrig)
-    newline = char(10);
     tline = textscan(tlineOrig, '%s', 'Delimiter', sprintf(' '));
     tline = tline{1};
     cmdId = tline{1};
@@ -63,8 +74,6 @@ function code = convertCmd(deviceComm,tlineOrig)
         end
     end
     
-%     input = strjoin(input, ', ');
-
     cmd = [name '.Send(' input ');'];
     comment = '';
     if(~isempty(commentIdx))

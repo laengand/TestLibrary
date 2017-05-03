@@ -1,8 +1,11 @@
 function CreateTestTemplate(name, deviceComm, opt)
+% CreateTestTemplate 
+% Script to create a template to base a device test on
+
 if(strcmp(opt, 'bare') == 0 && strcmp(opt, 'full') == 0)
     error('not a valid ''opt'' parameters. Use ''full'' or ''bare'' ');
 end
-newline = char(10);
+newline = [char(13) char(10)];
 classContainer = '';
 classContainer = sprintf('%sclassdef %s < handle\r\n', classContainer, name); % start of classDef
 classContainer = sprintf('%s%s', classContainer, ...

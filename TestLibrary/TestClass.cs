@@ -19,6 +19,7 @@ namespace TestLibrary
 {
   public class CommunicatorGenerator
   {
+    /*
     public class RealTimeHandler
     {
       FileStream stream;
@@ -51,7 +52,7 @@ namespace TestLibrary
           realtimeData = new byte[readSize];
       }
     }
-
+    */
     public readonly CommandInterpreter interpreter;
     public Assembly assembly;
     public string[] eventHandlerNames;
@@ -59,14 +60,14 @@ namespace TestLibrary
     static private IStandardCommunication communication;
     static public string appPath;
     private AppDomain appDom;
-    
+    /*
     public void SetRealTimeEventReceiver(UInt16 cmdId, string filename, UInt32 readSize)
     {
       FileStream stream = null;
       RealTimeHandler realtimeHandler = new RealTimeHandler(interpreter.GetCommandDefinition(cmdId), stream);
       realtimeHandler.SetRealTimeEventReceiver(communication, filename, readSize); 
     }
-
+    */
     ~CommunicatorGenerator()
     {
       
@@ -141,6 +142,26 @@ namespace TestLibrary
           Type t = assembly.GetType("TestLibrary.Communicator");
           generatedCommunicator = Activator.CreateInstance(t, id, pidFile);
           t.GetMethod("SetupEventReceivers").Invoke(generatedCommunicator, new object[] { });
+          if (false)
+          {
+            Type p0_t = assembly.GetType("C0012.ep0Output");
+            Type p1_t = assembly.GetType("C0012.ep1Status");
+            t.GetMethod("Connect").Invoke(generatedCommunicator, new object[] { });
+
+            Type t2 = assembly.GetType("C0012.C0012");
+            object C0012SetGPIOOutput = Activator.CreateInstance(t2, communication);
+
+            object p0 = p0_t.GetEnumValues().GetValue(4);
+            object p1 = p1_t.GetEnumValues().GetValue(1);
+
+            //t.GetMethod("C0012SetGPIOOutput.Send").Invoke(generatedCommunicator, new object[] { p0.GetEnumValues().GetValue(4), p1.GetEnumValues().GetValue(1) });
+            t2.GetMethod("Send").Invoke(C0012SetGPIOOutput, new object[] { p0, p1 });
+            short p0s = 4;
+            short p1s = 1;
+            //t2.GetMethod("Send").Invoke(C0012SetGPIOOutput, new object[] { p0s, p1s });
+            //t2.GetMethod("Send").Invoke(C0012SetGPIOOutput, new object[] { 4, 1 });
+            //t.GetMethod("C0012SetGPIOOutput.Send").Invoke(generatedCommunicator, new object[] { 4, 1 });
+          }
         }
       }
     }
@@ -166,7 +187,8 @@ namespace TestLibrary
       using IA.Common.StandardCommunication;
       using IA.Common.StandardCommunication.Tools;
       using IA.Common.UsbCommunication;
-      using System.IO; ");
+      using System.IO;
+      ");
       generatedClass.Append("namespace TestLibrary{ ");
       generatedClass.Append("public class Communicator : MarshalByRefObject{");
       generatedClass.Append("IStandardCommunication communication;");
@@ -196,7 +218,7 @@ namespace TestLibrary
         string classInstanceName = cmdDef.EventType == EventType.NotEvent ? className + cmdName : className;
         
         classDefinitions.Append("public " + className + "." + className + " " + classInstanceName + ";\r\n");
-        classInstances.Append(classInstanceName + " = new " + className + "." + className + "(communication); \r\n");
+        classInstances.Append(classInstanceName + " = new " + className + "." + className + "(ref communication); \r\n");
 
         cmdNames.Append(@"@""" + cmdName + @"""");
         cmdNames.Append(",\r\n");
@@ -241,7 +263,7 @@ namespace TestLibrary
         cmdClass.Append(CreateEnums(cmdDef));
         cmdClass.Append("public class " + className + "\r\n{\r\n");
         cmdClass.Append("public " + className + "(){communication = null;}\r\n");
-        cmdClass.Append("public " + className + "(IStandardCommunication comm){communication = comm;}\r\n");
+        cmdClass.Append("public " + className + "(ref IStandardCommunication comm){communication = comm;}\r\n");
         cmdClass.Append("private IStandardCommunication communication;\r\n");
         
         cmdNameSpace.Append(dataclass);
@@ -327,10 +349,13 @@ namespace TestLibrary
           {
             string parameterName = formatParameter(cmdDef.Parameters[i].ToString(), "p" + i.ToString() + "", "");
             string enumName = "e" + parameterName;
-            inputParameters.Append((cmdDef.Parameters[i].IsEnum ? enumName : cmdDef.Parameters[i].Type.ToString()) + " " + parameterName + ((i < (cmdDef.Parameters.Count - 1)) ? "," : ""));
+            string type = cmdDef.Parameters[i].Type.ToString();
+            bool isEnum = cmdDef.Parameters[i].IsEnum;
+            inputParameters.Append((isEnum ? enumName : type) + " " + parameterName + ((i < (cmdDef.Parameters.Count - 1)) ? "," : ""));
+            //rawInputParameters.Append("ValueType " + parameterName + ((i < (cmdDef.Parameters.Count - 1)) ? "," : ""));
             rawInputParameters.Append(cmdDef.Parameters[i].Type.ToString() + " " + parameterName + ((i < (cmdDef.Parameters.Count - 1)) ? "," : ""));
-            passedInputParameters.Append((cmdDef.Parameters[i].IsEnum ? "(" + enumName + ")" : "") + parameterName + ((i < (cmdDef.Parameters.Count - 1)) ? "," : ""));
-            code.Append("p.Write(" + parameterName + ");" + "d." + parameterName + " = " + parameterName + ";\r\n");
+            passedInputParameters.Append((isEnum ? "(" + enumName + ")" : "") + parameterName + ((i < (cmdDef.Parameters.Count - 1)) ? "," : ""));
+            code.Append("p.Write(" + (isEnum ? "(" + enumName + ")" : "(" + type + ")") + parameterName + ");" + "d." + parameterName + " = " + (isEnum ? "(" + enumName + ")" : "(" + type + ")") + parameterName + ";\r\n");
           }
           
             //if ((cmdDef.CommandId >= 0x4000) && (cmdDef.CommandId <= 0x5FFF))
@@ -383,13 +408,14 @@ namespace TestLibrary
             code.Append("d." + parameterName + " = " + (cmdDef.ReplyParameters[i].IsEnum ? "(" + enumName + ")" : "") + "p." + GetParameterReadString(cmdDef.ReplyParameters[i]) + ";\r\n");
           }
 
+          inputParameters = rawInputParameters;
           code.Append("return d;");
           cmdWrapper.Append("public " + classDataName + " Send");
           cmdWrapper.Append("(" + inputParameters + ")");
           cmdWrapper.Append("{");
           cmdWrapper.Append(code);
           cmdWrapper.Append("}");
-
+          /*
           if (inputParameters.ToString() != "" && inputParameters.ToString() != rawInputParameters.ToString())
           {
             rawWrapper.Append("public " + classDataName + " Send");
@@ -398,7 +424,7 @@ namespace TestLibrary
             rawWrapper.Append("return Send (" + passedInputParameters + ");\r\n");
             rawWrapper.Append("}");
             cmdClass.Append(rawWrapper);
-          }
+          }*/
           cmdClass.Append(cmdWrapper);
           
           // COMMAND WRAPPERS END
