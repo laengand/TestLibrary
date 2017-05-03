@@ -337,6 +337,7 @@ namespace TestLibrary
         {
           // COMMAND WRAPPERS START
           StringBuilder inputParameters = new StringBuilder();
+          //StringBuilder[]inputParameterList = new StringBuilder();
           StringBuilder rawInputParameters = new StringBuilder();
           StringBuilder passedInputParameters = new StringBuilder();
           StringBuilder cmdWrapper = new StringBuilder();
@@ -408,14 +409,14 @@ namespace TestLibrary
             code.Append("d." + parameterName + " = " + (cmdDef.ReplyParameters[i].IsEnum ? "(" + enumName + ")" : "") + "p." + GetParameterReadString(cmdDef.ReplyParameters[i]) + ";\r\n");
           }
 
-          inputParameters = rawInputParameters;
+          //inputParameters = rawInputParameters;
           code.Append("return d;");
           cmdWrapper.Append("public " + classDataName + " Send");
           cmdWrapper.Append("(" + inputParameters + ")");
           cmdWrapper.Append("{");
           cmdWrapper.Append(code);
           cmdWrapper.Append("}");
-          /*
+          
           if (inputParameters.ToString() != "" && inputParameters.ToString() != rawInputParameters.ToString())
           {
             rawWrapper.Append("public " + classDataName + " Send");
@@ -424,7 +425,7 @@ namespace TestLibrary
             rawWrapper.Append("return Send (" + passedInputParameters + ");\r\n");
             rawWrapper.Append("}");
             cmdClass.Append(rawWrapper);
-          }*/
+          }
           cmdClass.Append(cmdWrapper);
           
           // COMMAND WRAPPERS END

@@ -95,7 +95,7 @@ function input = GetInputParameters(deviceComm, inputSting)
         elseif(any(strfind(input{i}, '"')))
             input{i} = strrep(input{i}, '"','''');
         % Convert enums
-        elseif(~all(ismember(input{i}, '0123456789ABCDEF.')))
+        elseif(~all(ismember(input{i}, '0123456789ABCDEF+-.')))
             libName = char(deviceComm.GetType().Assembly.ToString());
             p = properties(['C' cmd '.Data']);
             if(isempty(p))
