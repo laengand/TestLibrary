@@ -523,7 +523,11 @@ namespace TestLibrary
 
           //if ((cmdDef.CommandId >= 0x4000) && (cmdDef.CommandId <= 0x5FFF))
           if (cmdDef.CommandType == CommandStatus.BulkReceived)
-          { 
+          {
+            codeData.Append("if(d.bulk == null)");
+            codeData.Append("{");
+            codeData.Append("d.bulk = new Bulk.Bulk();");
+            codeData.Append("}");
             codeData.Append("communication.SendCommand((UInt16)" + "0x" + cmdDef.CommandId.ToString("X4") + ", ref p, d.bulk.GetStream());\r\n");
             codeData.Append("d.bulk.FromStream(d.bulk.GetStream());\r\n");
           }
@@ -531,7 +535,10 @@ namespace TestLibrary
           else if (cmdDef.CommandType == CommandStatus.BulkSent)
           {
             //passedInputParameters.Append((cmdDef.Parameters.Count > 0 ? "," : "") + "bulkPath");
-
+            codeData.Append("if(d.bulk == null)");
+            codeData.Append("{");
+            codeData.Append(@"throw new System.InvalidOperationException(@""" + "bulk = null is not allowed when sending bulk data" + @""");");
+            codeData.Append("}");
             codeData.Append("communication.SendCommand((UInt16)" + "0x" + cmdDef.CommandId.ToString("X4") + ", ref p, d.bulk.GetStream(), (int)d.bulk.GetStreamLength());\r\n");
           }
           else
