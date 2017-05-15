@@ -74,7 +74,7 @@ function code = convertCmd(deviceComm,tlineOrig)
         end
     end
     
-    cmd = [name '.Send(' input ');'];
+    cmd = [name '(' input ');'];
     comment = '';
     if(~isempty(commentIdx))
         comment = ['%' tlineOrig(commentIdx+2:end)];
