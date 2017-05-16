@@ -333,9 +333,11 @@ namespace TestLibrary
         string cmdName = className.Remove(0, 5);
         className = className.Substring(0, 5);
 
-        //string classInstanceName = cmdDef.EventType == EventType.NotEvent ? className + cmdName : className;
-        string classInstanceName = className;
-        classDefinitions.Append((cmdDef.EventType == EventType.NotEvent ? "private " : "public ") + className + "." + className + " " + classInstanceName + ";\r\n");
+        string classInstanceName = cmdDef.EventType == EventType.NotEvent ? cmdName : className;
+        //string classInstanceName = className;
+
+        classDefinitions.Append((cmdDef.EventType == EventType.NotEvent ? "public " : "public ") + className + "." + className + " " + classInstanceName + ";\r\n");
+
         classInstances.Append(classInstanceName + " = new " + className + "." + className + "(ref communication); \r\n");
 
         cmdNames.Append(@"@""" + cmdName + @"""");
@@ -362,7 +364,12 @@ namespace TestLibrary
         {
           ParameterDefinition para = cmdDef.Parameters[i];
           string parameterName = formatParameter(para.Discription, "p" + i.ToString(), "");
+          bool isEnum = cmdDef.Parameters[i].IsEnum;
           dataclass.Append(CreateDataSettersAndGetters(para, parameterName));
+          //if (isEnum)
+          //{
+          //  dataclass.Append("public " + "e" + parameterName + " " + "e" + parameterName + ";\r\n");
+          //}
 
           dataclassDescription.Append(parameterName + "\r\n");
           dataclassConstructorCode.Append("internal" + parameterName + " = " + parameterName + ";\r\n");
@@ -374,7 +381,11 @@ namespace TestLibrary
         {
           ParameterDefinition para = cmdDef.ReplyParameters[i];
           string parameterName = formatReplyParameter(para.Discription, "p" + i.ToString(), "");
-
+          bool isEnum = cmdDef.ReplyParameters[i].IsEnum;
+          //if (isEnum)
+          //{
+          //  dataclass.Append("public " + "e" + parameterName + " " + "e" + parameterName + ";\r\n");
+          //}
           dataclass.Append(CreateDataSettersAndGetters(para, parameterName));
           dataclassDescription.Append(parameterName + "\r\n");
         }
@@ -603,7 +614,7 @@ namespace TestLibrary
 
           classFunctions.Append("public " + className + "." + classDataName + " " + className + cmdName + "(" + className + "." + inputDataParameters + ")");
           classFunctions.Append("{");
-          classFunctions.Append("return " + className + ".Send(" + passedInputDataParameters + ");");
+          classFunctions.Append("return " + classInstanceName + ".Send(" + passedInputDataParameters + ");");
           classFunctions.Append("}");
 
           if (cmdDef.CommandType == CommandStatus.BulkSent || cmdDef.CommandType == CommandStatus.BulkReceived)
@@ -630,7 +641,7 @@ namespace TestLibrary
 
                 classFunctions.Append("public " + className + "." + classDataName + " " + className + cmdName + "(" + inputParaArray + bulkPara + ")");
                 classFunctions.Append("{");
-                classFunctions.Append("return " + className + ".Send(" + passedInputParaParameters + passedBulkPara + ");");
+                classFunctions.Append("return " + classInstanceName + ".Send(" + passedInputParaParameters + passedBulkPara + ");");
                 classFunctions.Append("}");
               }
             }
@@ -652,7 +663,7 @@ namespace TestLibrary
 
               classFunctions.Append("public " + className + "." + classDataName + " " + className + cmdName + "(" + inputParaArray + ")");
               classFunctions.Append("{");
-              classFunctions.Append("return " + className + ".Send(" + passedInputParaParameters + ");");
+              classFunctions.Append("return " + classInstanceName + ".Send(" + passedInputParaParameters + ");");
               classFunctions.Append("}");
             }
 
@@ -668,7 +679,7 @@ namespace TestLibrary
 
               classFunctions.Append("public " + className + "." + classDataName + " " + className + cmdName + "(" + inputParaArray + bulkPara + ")");
               classFunctions.Append("{");
-              classFunctions.Append("return " + className + ".Send(" + passedInputParaParameters + passedBulkPara + ");");
+              classFunctions.Append("return " + classInstanceName + ".Send(" + passedInputParaParameters + passedBulkPara + ");");
               classFunctions.Append("}");
             }
           }
@@ -684,7 +695,7 @@ namespace TestLibrary
 
             classFunctions.Append("public " + className + "." + classDataName + " " + className + cmdName + "(" + inputParaArray + ")");
             classFunctions.Append("{");
-            classFunctions.Append("return " + className + ".Send(" + passedInputParaParameters + ");");
+            classFunctions.Append("return " + classInstanceName + ".Send(" + passedInputParaParameters + ");");
             classFunctions.Append("}");
           }
    
