@@ -346,9 +346,12 @@ namespace TestLibrary
         System.Text.StringBuilder cmdNameSpace = new System.Text.StringBuilder();
         System.Text.StringBuilder enumNameSpace = new System.Text.StringBuilder();
         System.Text.StringBuilder cmdClass = new System.Text.StringBuilder();
+
         // DATA CLASS START
         System.Text.StringBuilder dataclass = new System.Text.StringBuilder();
-
+        System.Text.StringBuilder dataclassDefaultConstructorCode = new System.Text.StringBuilder();
+        System.Text.StringBuilder dataclassConstructorCode = new System.Text.StringBuilder();
+        System.Text.StringBuilder dataclassConstructorInput = new System.Text.StringBuilder();
         dataclass.Append("public class " + classDataName + "\r\n{\r\n");
 
         dataclassDescription.Append(@"@""");
@@ -359,16 +362,19 @@ namespace TestLibrary
         {
           ParameterDefinition para = cmdDef.Parameters[i];
           string parameterName = formatParameter(para.Discription, "p" + i.ToString(), "");
-                
           dataclass.Append(CreateDataSettersAndGetters(para, parameterName));
+
           dataclassDescription.Append(parameterName + "\r\n");
+          dataclassConstructorCode.Append("internal" + parameterName + " = " + parameterName + ";\r\n");
+          dataclassDefaultConstructorCode.Append("internal" + parameterName + " = " + para.Default + ";\r\n");
+          dataclassConstructorInput.Append(para.Type + " " + parameterName + (i < cmdDef.Parameters.Count - 1 ? ", " : ""));
         }
         dataclassDescription.Append("Reply\r\n");
         for (int i = 0; i < cmdDef.ReplyParameters.Count; i++)
         {
           ParameterDefinition para = cmdDef.ReplyParameters[i];
           string parameterName = formatReplyParameter(para.Discription, "p" + i.ToString(), "");
-          
+
           dataclass.Append(CreateDataSettersAndGetters(para, parameterName));
           dataclassDescription.Append(parameterName + "\r\n");
         }
@@ -378,11 +384,24 @@ namespace TestLibrary
         {
           dataclass.Append("public Bulk.Bulk bulk;\r\n");
         }
+
+        dataclass.Append("public " + classDataName + "()\r\n");
+        dataclass.Append("{");
+        dataclass.Append(dataclassDefaultConstructorCode);
+        dataclass.Append("}\r\n");
+        
+        if (cmdDef.Parameters.Count > 0)
+        {
+          dataclass.Append("public " + classDataName + "(" + dataclassConstructorInput + ")\r\n");
+          dataclass.Append("{");
+          dataclass.Append(dataclassConstructorCode);
+          dataclass.Append("}\r\n");
+        }
         dataclass.Append("} ");
+
+
         dataclassDescription.Append(@"""" + ",\r\n");
         enumNameSpace.Append("namespace " + className + "\r\n{\r\n namespace InternalEnums{");
-        cmdNameSpace.Append("namespace " + className + "\r\n{\r\n");
-
         enumNameSpace.Append(CreateEnums(cmdDef, false));
         enumNameSpace.Append("}}");
 
@@ -391,7 +410,8 @@ namespace TestLibrary
         cmdClass.Append("public " + className + "(){communication = null;}\r\n");
         cmdClass.Append("public " + className + "(ref IStandardCommunication comm){communication = comm;}\r\n");
         cmdClass.Append("private IStandardCommunication communication;\r\n");
-        
+
+        cmdNameSpace.Append("namespace " + className + "\r\n{\r\n");
         cmdNameSpace.Append(dataclass);
         
         // DATA CLASS END
@@ -489,8 +509,7 @@ namespace TestLibrary
           
           // COMMAND WRAPPERS START
           StringBuilder inputDataParameters = new StringBuilder();
-          //StringBuilder[]inputParameterList = new StringBuilder();
-          //StringBuilder rawInputParameters = new StringBuilder();
+          
           StringBuilder passedInputDataParameters = new StringBuilder();
           StringBuilder passedInputParaParameters = new StringBuilder();
           StringBuilder inputParaFile = new StringBuilder();
@@ -499,18 +518,12 @@ namespace TestLibrary
           StringBuilder sendDataWrapper = new StringBuilder();
           StringBuilder sendParaArrayWrapper = new StringBuilder();
           StringBuilder sendParaFileWrapper = new StringBuilder();
-
           
-
-          StringBuilder cmdWrapper = new StringBuilder();
-          StringBuilder rawWrapper = new StringBuilder();
           StringBuilder codeData = new StringBuilder();
-
           StringBuilder codeParaArray = new StringBuilder();
           StringBuilder codeParaFile = new StringBuilder();
 
           codeData.Append("Parameters parameters = new Parameters();\r\n");
-
           codeParaFile.Append(classDataName + " data = new " + classDataName + "();\r\n");
           codeParaArray.Append(classDataName + " data = new " + classDataName + "();\r\n");
 
@@ -553,8 +566,7 @@ namespace TestLibrary
           }
           //else if ((cmdDef.CommandId >= 0x8000) && (cmdDef.CommandId <= 0xBFFF))
           else if (cmdDef.CommandType == CommandStatus.BulkSent)
-          {
-            //passedInputParameters.Append((cmdDef.Parameters.Count > 0 ? "," : "") + "bulkPath");
+          { 
             codeData.Append("if(data.bulk == null)");
             codeData.Append("{");
             codeData.Append(@"throw new System.InvalidOperationException(@""" + "bulk = null is not allowed when sending bulk data" + @""");");
@@ -583,14 +595,6 @@ namespace TestLibrary
 
           codeData.Append("return data;");
           
-          //string docStart = "/// <summary>\r\n";
-          //string doc = "/// Sends a command using its data class\r\n";
-          //string docEnd = "/// </summary>\r\n";
-
-          //sendDataWrapper.Append(docStart);
-          //sendDataWrapper.Append(doc);
-          //sendDataWrapper.Append(docEnd);
-
           sendDataWrapper.Append("public " + classDataName + " Send");
           sendDataWrapper.Append("(" + inputDataParameters + ")");
           sendDataWrapper.Append("{");
@@ -691,9 +695,8 @@ namespace TestLibrary
 
         generatedCode.Append(enumNameSpace);
         generatedCode.Append(cmdNameSpace);
-        
 
-      }
+      } 
 
       setupEventReceivers.Append("} ");
       generatedClass.Append(classDefinitions);
@@ -771,12 +774,9 @@ namespace TestLibrary
       generatedClass.Append(cmdN + cmdDes);
       generatedClass.Append("}\r\n");
       generatedClass.Append("}\r\n");
-      //generatedClass.Append("namespace TestLibrary{\r\n");
       generatedClass.Append(generatedCode.ToString());
-      //generatedClass.Append("}\r\n");
 
-      string rtn = generatedClass.ToString();
-      return rtn;
+      return generatedClass.ToString();
     }
     private string GetParameterType(ParameterDefinition para)
     {
