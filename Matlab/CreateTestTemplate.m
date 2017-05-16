@@ -67,7 +67,7 @@ setupEventListeners = [setupEventListeners ...
     '%% ' 'SetupAllEventListeners' newline];
 
 setupEventListeners = [setupEventListeners, ...
-    'function SetupAllEventListeners(self)'];
+    'function SetupAllEventListeners(self)' newline];
 
 commandList = deviceComm.commandList;
 eventCallbacks ='';

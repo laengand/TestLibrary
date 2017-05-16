@@ -2,7 +2,6 @@ function ConvertTesttoolScript(matlabScriptName, deviceComm, testToolScriptPath)
 % ConvertTesttoolScript 
 % Script to convert a Testtool script into a corresponding matlab script
     newline = [char(13) char(10)];
-    tab = char(9);
     generatedScript = ['function ' matlabScriptName '(deviceComm)' newline];
     testToolScript = fopen(testToolScriptPath,'r');
     while ~feof(testToolScript)
