@@ -594,13 +594,17 @@ namespace TestLibrary
           }
 
           codeData.Append("return data;");
-          
+          // 
           sendDataWrapper.Append("public " + classDataName + " Send");
           sendDataWrapper.Append("(" + inputDataParameters + ")");
           sendDataWrapper.Append("{");
           sendDataWrapper.Append(codeData);
           sendDataWrapper.Append("}");
 
+          classFunctions.Append("public " + className + "." + classDataName + " " + className + cmdName + "(" + className + "." + inputDataParameters + ")");
+          classFunctions.Append("{");
+          classFunctions.Append("return " + className + ".Send(" + passedInputDataParameters + ");");
+          classFunctions.Append("}");
 
           if (cmdDef.CommandType == CommandStatus.BulkSent || cmdDef.CommandType == CommandStatus.BulkReceived)
           {
