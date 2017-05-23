@@ -1,6 +1,9 @@
 clear
 clc
 %% Init Testlibrary
+addpath('Doc');
+addpath('Doc/html');
+% addpath('Doc/helpfiles');
 [folder, name, ext] = fileparts(mfilename('fullpath'));
 cd(folder);
 

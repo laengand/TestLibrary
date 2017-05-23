@@ -5,3 +5,5 @@ GeneratedClass*
 *.template
 EventHandler*
 *.asv
+Matlab/Doc/helpfiles/*
+Matlab/Doc/html/*

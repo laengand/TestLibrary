@@ -612,10 +612,16 @@ namespace TestLibrary
           sendDataWrapper.Append(codeData);
           sendDataWrapper.Append("}");
 
+
+          string docStart = "/// <summary>\r\n";
+          string doc = "/// Sends a command using its Data class\r\n";
+          string docEnd = "/// <summary>\r\n";
+
+          classFunctions.Append(docStart + doc + docEnd);
           classFunctions.Append("public " + className + "." + classDataName + " " + className + cmdName + "(" + className + "." + inputDataParameters + ")");
           classFunctions.Append("{");
           classFunctions.Append("return " + classInstanceName + ".Send(" + passedInputDataParameters + ");");
-          classFunctions.Append("}");
+          classFunctions.Append("}\r\n");
 
           if (cmdDef.CommandType == CommandStatus.BulkSent || cmdDef.CommandType == CommandStatus.BulkReceived)
           {
@@ -639,10 +645,12 @@ namespace TestLibrary
                 sendParaArrayWrapper.Append(codeParaArray);
                 sendParaArrayWrapper.Append("}");
 
+                doc = "/// Sends a command using the associated parameters\r\n";
+                classFunctions.Append(docStart + doc + docEnd);
                 classFunctions.Append("public " + className + "." + classDataName + " " + className + cmdName + "(" + inputParaArray + bulkPara + ")");
                 classFunctions.Append("{");
                 classFunctions.Append("return " + classInstanceName + ".Send(" + passedInputParaParameters + passedBulkPara + ");");
-                classFunctions.Append("}");
+                classFunctions.Append("}\r\n");
               }
             }
             else
@@ -661,10 +669,12 @@ namespace TestLibrary
               sendParaArrayWrapper.Append(codeParaArray);
               sendParaArrayWrapper.Append("}");
 
+              doc = "/// Sends a command using the associated parameters\r\n";
+              classFunctions.Append(docStart + doc + docEnd);
               classFunctions.Append("public " + className + "." + classDataName + " " + className + cmdName + "(" + inputParaArray + ")");
               classFunctions.Append("{");
               classFunctions.Append("return " + classInstanceName + ".Send(" + passedInputParaParameters + ");");
-              classFunctions.Append("}");
+              classFunctions.Append("}\r\n");
             }
 
             // Bulk from/to file
@@ -677,10 +687,12 @@ namespace TestLibrary
               sendParaFileWrapper.Append(codeParaFile);
               sendParaFileWrapper.Append("}");
 
+              doc = "/// Sends a command using the associated parameters\r\n";
+              classFunctions.Append(docStart + doc + docEnd);
               classFunctions.Append("public " + className + "." + classDataName + " " + className + cmdName + "(" + inputParaArray + bulkPara + ")");
               classFunctions.Append("{");
               classFunctions.Append("return " + classInstanceName + ".Send(" + passedInputParaParameters + passedBulkPara + ");");
-              classFunctions.Append("}");
+              classFunctions.Append("}\r\n");
             }
           }
           else
@@ -693,12 +705,14 @@ namespace TestLibrary
             sendParaArrayWrapper.Append(codeParaArray);
             sendParaArrayWrapper.Append("}");
 
+            doc = "/// Sends a command using the associated parameters\r\n";
+            classFunctions.Append(docStart + doc + docEnd);
             classFunctions.Append("public " + className + "." + classDataName + " " + className + cmdName + "(" + inputParaArray + ")");
             classFunctions.Append("{");
             classFunctions.Append("return " + classInstanceName + ".Send(" + passedInputParaParameters + ");");
-            classFunctions.Append("}");
+            classFunctions.Append("}\r\n");
           }
-   
+          
           cmdClass.Append(sendDataWrapper.ToString() + sendParaFileWrapper.ToString() + sendParaArrayWrapper.ToString());
 
           // COMMAND WRAPPERS END
