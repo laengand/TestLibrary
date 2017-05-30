@@ -122,7 +122,7 @@ function input = GetInputParameters(deviceComm, inputSting)
                 temp = regexprep(input{i},' ',''); 
                 temp = regexprep(temp,'[^0-9a-zA-Z]+',''); 
                 
-                if(any(strfind(lower(eName), lower(temp))))
+                if(any(regexpi(eName,['\w*' temp '$'])))
                     break;
                 elseif (j == t.DeclaredMembers.Length-1)
                     error(['Enum ''' temp ''' not defined in ''' libName ''''] )
