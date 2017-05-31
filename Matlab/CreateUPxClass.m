@@ -13,7 +13,7 @@ function CreateUPxClass(name)
     LibraryName = 'UPxComm.dll';
     
     try
-        asmInfo = NET.addAssembly([PathToLibrary LibraryName]);
+        asmInfo = NET.addAssembly([PathToLibrary LibraryName]); %#ok
         import InstrumentDrivers.*
     catch ex
         error('Library or support file loading problem. Script halted')
@@ -113,61 +113,11 @@ function f = CreateFunction(c)
         c = strrep(c, 'Static ','');
         c = strrep(c, 'System.Type ','');
         
-        additionalRtn = [];
+        additionalRtn = {};
         additionalPreSendFuncLine = [];
         additionalPostSendFuncLine = [];
         
         
-        %         indices = strfind(c, 'System.Text.StringBuilder');
-        %         if(indices > 0)
-        %             for i=1:numel(indices)
-        %                 tmp = c(indices(i):end);
-        %                 r = strsplit(tmp, 'System.Text.StringBuilder ');
-        %
-        %
-        %
-        %                 additionalRtn = [additionalRtn ...
-        %                     r(2)];
-        %                 additionalPreSendFuncLine = [additionalPreSendFuncLine ...
-        %                     r(2) ' = System.Text.StringBuilder(256);' newline];
-        %                 additionalPostSendFuncLine = [additionalPostSendFuncLine ...
-        %                     r(2) ' = char(' r(2) '.ToString);' newline];
-        %             end
-        %             for i=1:numel(additionalRtn)
-        %                 c = strrep(c, additionalRtn{i}, '');
-        %                 additionalRtn{i} = strrep(additionalRtn{i}, ')','');
-        %                 additionalRtn{i} = strrep(additionalRtn{i}, ',','');
-        %                 additionalRtn{i} = strtrim(additionalRtn{i});
-        %
-        %             end
-        %              additionalRtn = strjoin(additionalRtn, ',');
-        %              additionalPreSendFuncLine = strjoin(additionalPreSendFuncLine, '');
-        %              additionalPostSendFuncLine = strjoin(additionalPostSendFuncLine, '');
-        %         end
-        %
-        
-
-        %
-        %         c = strsplit(c,{'=', '(',')'});
-        %         if(numel(c)< 3)
-        %             upxRtn = additionalRtn;
-        %             funcRtn = upxRtn;
-        %             func = strtrim(c{1});
-        %             para = strtrim(c{2});
-        %         else
-        %             upxRtn = strtrim(c{1});
-        %             upxRtn  = strrep(upxRtn, ']','');
-        %             upxRtn  = strrep(upxRtn, '[','');
-        %
-        %             if(~isempty(additionalRtn))
-        %                 additionalRtn = [', ' additionalRtn];
-        %             end
-        %             funcRtn  = ['[' upxRtn additionalRtn '] = '];
-        %             upxRtn = ['[' upxRtn '] = '];
-        %
-        %             func = strtrim(c{2});
-        %             para = strtrim(c{3});
-        %         end
         c = strsplit(c,{'=', '(',')'});
         if(numel(c)< 3)
             rtn = '';
@@ -189,39 +139,23 @@ function f = CreateFunction(c)
         upxPara = para;
         upxPara = strrep(upxPara, 'System.Text.StringBuilder ','');
         para = strsplit(para, ',');
+                
+        replacedParaIndex = cell2mat(cellfun(@(c) ~isempty(strfind(c, 'System.Text.StringBuilder')), para, 'UniformOutput', false));
+        replacedPara = para(replacedParaIndex);
         
+        for j=1:numel(replacedPara)
+            paraToReplace = strtrim(strrep(replacedPara(j), 'System.Text.StringBuilder', ''));
+            
+            additionalRtn = [additionalRtn ...
+                paraToReplace]; %#ok
+            additionalPreSendFuncLine = [additionalPreSendFuncLine ...
+                char(paraToReplace) ' = System.Text.StringBuilder(256);' newline]; %#ok
+            additionalPostSendFuncLine = [additionalPostSendFuncLine ...
+                char(paraToReplace) ' = char(' char(paraToReplace) '.ToString);' newline]; %#ok
+        end
         
-        additionalRtn = {};
-%           if(~isempty(cell2mat(indices)))
-%               for i=1:numel(indices)
-                                    
-                  replacedParaIndex = cell2mat(cellfun(@(c) ~isempty(strfind(c, 'System.Text.StringBuilder')), para, 'UniformOutput', false));
-                  replacedPara = para(replacedParaIndex);
-                  
-                  for j=1:numel(replacedPara)
-                      paraToReplace = strtrim(strrep(replacedPara(j), 'System.Text.StringBuilder', ''));
-                      
-                      additionalRtn = [additionalRtn ...
-                          paraToReplace];
-                      additionalPreSendFuncLine = [additionalPreSendFuncLine ...
-                          char(paraToReplace) ' = System.Text.StringBuilder(256);' newline];
-                      additionalPostSendFuncLine = [additionalPostSendFuncLine ...
-                          char(paraToReplace) ' = char(' char(paraToReplace) '.ToString);' newline];
-                  end
-%               end
-%               for i=1:numel(additionalRtn)
-%                   c = strrep(c, additionalRtn{i}, '');
-%                   additionalRtn{i} = strrep(additionalRtn{i}, ')','');
-%                   additionalRtn{i} = strrep(additionalRtn{i}, ',','');
-%                   additionalRtn{i} = strtrim(additionalRtn{i});
-%                   
-%               end
-%               additionalRtn = strjoin(additionalRtn, ',');
-%               additionalPreSendFuncLine = strjoin(additionalPreSendFuncLine, '');
-%               additionalPostSendFuncLine = strjoin(additionalPostSendFuncLine, '');
-%           end
         para = strrep(para, 'System.Text.StringBuilder ','');
-         
+        para = strtrim(para);
         if(~strcmp(para(~replacedParaIndex),''))
             funcPara = ['self, ' strjoin(para(~replacedParaIndex), ', ')];
         else
@@ -233,8 +167,8 @@ function f = CreateFunction(c)
         else
             funcRtn = ['[' rtn '] = '];
         end
-
-
+        
+        
         f = ['function ' funcRtn  func '(' funcPara ')' newline ...
             '% ' func newline ...
             '% ' funcRtn func '(' funcPara ')' newline ...

@@ -15,23 +15,23 @@ function ConvertTesttoolScript(matlabScriptName, deviceComm, testToolScriptPath)
             if(strcmpi(tline{1}, 'pause') == 1)
                 time = str2double(tline{2});
                 generatedScript = [generatedScript ...
-                    'pause(' num2str(time/1000) ')'];
+                    'pause(' num2str(time/1000) ')']; %#ok
             elseif(strncmpi(tline{1},'//', 2) == 1)
                 generatedScript = [generatedScript ...
-                    '%' tlineOrig(3:end)];
+                    '%' tlineOrig(3:end)]; %#ok
             elseif(all(ismember(tline{1}, '0123456789ABCDEF')))
                 code = convertCmd(deviceComm, tlineOrig);
                 generatedScript = [generatedScript ...
-                    code];
+                    code]; %#ok
             elseif(strncmpi(tline{1}, 'RealtimeEvent',length('RealtimeEvent')))
                 inputPara = GetInputParameters(deviceComm, tlineOrig(length('RealtimeEvent')+1:end));
                 generatedScript = [generatedScript ...
-                    'deviceComm.SetRealTimeEventReceiver(' inputPara ');'];
+                    'deviceComm.SetRealTimeEventReceiver(' inputPara ');']; %#ok
             end
         end 
         if(addNewline)
            generatedScript = [generatedScript ...
-               newline];
+               newline]; %#ok
         end
     end
     generatedScript = [generatedScript ...
@@ -116,7 +116,7 @@ function input = GetInputParameters(deviceComm, inputSting)
                 error(['Enum ' enum ' not defined in ''' libName '''']);
             end
             eName = '';
-            j = 0;
+            
             for j=0:t.DeclaredMembers.Length-1 %c# indexing
                 eName = char(t.DeclaredMembers.Get(j).Name);
                 temp = regexprep(input{i},' ',''); 
