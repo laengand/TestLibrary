@@ -48,7 +48,7 @@ namespace TestLibrary
 
       CSharpCodeProvider provider = new CSharpCodeProvider(providerOptions);
       CompilerParameters para = new CompilerParameters();
-      appPath = new Uri(System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().GetName().CodeBase)).LocalPath;
+      appPath = new Uri(System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().GetName().CodeBase)).OriginalString;
 
       
       para.ReferencedAssemblies.Add(@"C:\Windows\Microsoft.NET\Framework\v4.0.30319\System.Core.dll");
@@ -484,6 +484,7 @@ namespace TestLibrary
           code.Append("{");
           code.Append("eventHandled.WaitOne();");
           code.Append("}");
+          code.Append("bulk = data.bulk.GetStream();\r\n");
           code.Append("}");
           code.Append("parameters.Position = 0;\r\n");
           for (int i = 0; i < cmdDef.ReplyParameters.Count; i++)
