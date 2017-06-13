@@ -487,7 +487,7 @@ namespace TestLibrary
 
           if (cmdDef.CommandType == CommandStatus.BulkReceived)
           {
-            code.Append("bulk = data.bulk.GetStream();\r\n");
+            code.Append("bulk.Write(data.bulk.ToUInt8(), 0, data.bulk.ToUInt8().Length);\r\n");
           }
 
           code.Append("}");
