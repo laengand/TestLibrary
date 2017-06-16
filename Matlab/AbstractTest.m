@@ -28,6 +28,12 @@ classdef AbstractTest < handle & matlab.mixin.SetGet
             end 
         end
         
+        function delete(self)
+            for n=1:length(self.els)
+                delete(self.els{n});
+            end
+        end
+        
         %% AddEventListener
         % Add a callback upon receiving an event
         function AddEventListener(self, eventInstance, callback)
@@ -65,6 +71,8 @@ classdef AbstractTest < handle & matlab.mixin.SetGet
                     % Only one source is supported
                     if((self.els{n}.Source{1}.ToString == eventInstance.ToString) && strcmp(char(self.els{n}.Callback),char(callback)))
                         % found it, so add default callback.
+                        self.els{n}.Enabled = false;
+                        delete(self.els{n});
                         self.els{n} = event.listener(eventInstance, 'Handler', @self.LostAndFoundCallback);
                         self.els{n}.Enabled = false;
                         break;
