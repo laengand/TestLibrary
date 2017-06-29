@@ -5,20 +5,18 @@ classdef TestRunner < handle
     properties(Access = private)
         els;
         testCollection;
-        testCollectionIdx;
+        testCollectionIndices;
         testCollectionPath;
+        idxOld
         currentIdx;
         idxCounter = 1;
         stop = false;
-        handles;
+        
+        
+        
         testListBox;
-        idxOld
-        startStopPushButton;
-        startStopPushTool;
+        startStopToggleTool;
         openTestPushTool;
-        openTestPushButton;
-        stopPushTool;
-        toolbar;
         startIcon;
         stopIcon;
         openTestIcon;
@@ -60,109 +58,26 @@ classdef TestRunner < handle
         
         function self = TestRunner(hObject)
             
-%             self.startStopPushButton = uicontrol(...
-%                 'Parent', hObject,...
-%                 'FontUnits',get(0,'defaultuicontrolFontUnits'),...
-%                 'Units','characters',...
-%                 'String','Start',...
-%                 'Style',get(0,'defaultuicontrolStyle'),...
-%                 'Position',[-0.2 -0.0769230769230769 30.2 3.92307692307692],...
-%                 'Callback',@self.StartStopPushButtonCallback,...
-%                 'Children',[],...
-%                 'Tag','startStopPushButton' ...
-%                 );
-            %             'CreateFcn', {@local_CreateFcn, blanks(0), appdata} );
-            
-%             self.openTestPushButton = uicontrol(...
-%                 'Parent', hObject,...
-%                 'FontUnits',get(0,'defaultuicontrolFontUnits'),...
-%                 'Units','characters',...
-%                 'String','Load Test(s)',...
-%                 'Style',get(0,'defaultuicontrolStyle'),...
-%                 'Position',[-0.2 15.3076923076923 30.2 3.92307692307693],...
-%                 'Callback',@self.OpenTestPushToolClickedCallback,...
-%                 'Children',[],...
-%                 'Tag','openTestPushButton' ...
-%                 );
-            %             'CreateFcn', {@local_CreateFcn, blanks(0), appdata} );
-            parentPosition = hObject.Position;
-            parentUnits = hObject.Units;
-            self.testListBox = uicontrol(...
-                'Parent',hObject,...
-                'FontUnits',get(0,'defaultuicontrolFontUnits'),...
-                'Units', parentUnits,...
-                'Max',2,...
-                'String',blanks(0),...
-                'Style','listbox',...
-                'Value', [],...
-                'Position', [3 3 parentPosition(3:4)-3], ...
-                'BackgroundColor',[1 1 1],...
-                'Callback',@self.TestListboxCallback,...
-                'Children',[], ...
-                'Tag','testListbox');
-            
-%             'Units', 'pixels', ...    
-%              'Position',[0 0 200 150],...
-            % 'CreateFcn', {@local_CreateFcn, @(hObject,eventdata)TestGui_export('listbox1_CreateFcn',hObject,eventdata,guidata(hObject)), appdata} ,...
-            
-%             self.toolbar = uitoolbar(...
-%                 'Parent', hObject,...
-%                 'Tag','toolbar'); %,...
-            %                 'CreateFcn', {@local_CreateFcn, blanks(0), appdata} );
-            
-            %             appdata = [];
-            %             appdata.toolid = 'Standard.FileOpen';
-            %             appdata.CallbackInUse = struct(...
-            %                 'ClickedCallback', 'TestGui(''uipushtool3_ClickedCallback'',gcbo,[],guidata(gcbo))');
-            %             appdata.lastValidTag = 'uipushtool3';
+            self.testListBox = findobj(hObject,'tag', 'testListbox');
+            self.testListBox.Callback = @self.TestListboxCallback;
+            self.testListBox.Max = 2;
+            self.testListBox.Value = [];
+
             self.openTestIcon = load('openTestIcon.mat');
             self.openTestIcon = self.openTestIcon.mat;
             
             self.openTestPushTool = findobj(hObject,'tag','openTestPushTool');
             self.openTestPushTool.ClickedCallback = @self.OpenTestPushToolClickedCallback;
-            
-%             self.openTestPushTool = uipushtool(...
-%                 'Parent', self.toolbar,...
-%                 'Serializable',get(0,'defaultuipushtoolSerializable'),...
-%                 'Children',[],...
-%                 'BusyAction','cancel',...
-%                 'Interruptible','off',...
-%                 'Tag','openTestPushToolClickedCallback',...
-%                 'CData', self.openTestIcon,...
-%                 'ClickedCallback',@self.OpenTestPushToolClickedCallback,...
-%                 'Separator',get(0,'defaultuipushtoolSeparator'),...
-%                 'TooltipString','Open File',...
-%                 'HandleVisibility',get(0,'defaultuipushtoolHandleVisibility')); %,...
-            %                 'CreateFcn', {@local_CreateFcn, blanks(0), appdata} );
-            
+                        
             self.startIcon = load('startIcon.mat');
             self.startIcon = self.startIcon.mat;
         
-            self.startStopPushTool = findobj(hObject,'tag','startStopToggletool');
-            self.startStopPushTool.ClickedCallback = @self.StartStopPushButtonCallback;
-%             self.startStopPushTool = uitoggletool(...
-%             'Parent', self.toolbar,...
-%             'Children',[],...
-%             'Tag','startStopPushtool',...
-%             'CData',self.startIcon, ...
-%             'ClickedCallback', @self.StartStopPushButtonCallback, ...
-%             'Separator', get(0,'defaultuitoggletoolSeparator'));
+            self.startStopToggleTool = findobj(hObject,'tag','startStopToggletool');
+            self.startStopToggleTool.ClickedCallback = @self.StartStopPushButtonCallback;
 
-        
-        %             'OffCallback', @self.StopCallback, ...
-%             'OnCallback', @self.StartCallback, ...
             self.stopIcon = load('stopIcon.mat');
             self.stopIcon = self.stopIcon.mat;
             
-%             self.stopPushTool = uipushtool(...
-%                 'Parent', self.toolbar,...
-%                 'Children',[],...
-%                 'Tag','stop',...
-%                 'CData',self.stopIcon{2},...
-%                 'ClickedCallback', @self.StopCallback, ...    
-%                 'Separator',get(0,'defaultuipushtoolSeparator')); %,...
-%                 'CreateFcn', {@local_CreateFcn, blanks(0), appdata} );
-
             self.els{1} = addlistener(self,'startEvent', @self.StartCallback);
             self.els{end}.Recursive = 1;
             self.els{end + 1} = addlistener(self,'setupDoneEvent', @self.SetupDoneCallback);
@@ -180,8 +95,8 @@ classdef TestRunner < handle
             self.testCollection = testCollection;
         end
         
-        function SetTestCollectionIdx(self, testCollectionIdx)
-            self.testCollectionIdx = testCollectionIdx;
+        function SetTestCollectionIndices(self, testCollectionIndices)
+            self.testCollectionIndices = testCollectionIndices;
             
         end
         function UiSetup(self, idx)
@@ -217,7 +132,7 @@ classdef TestRunner < handle
         
         %% event callbacks
         function StartCallback(self, ~, eventdata)
-            self.currentIdx = self.testCollectionIdx(self.idxCounter);
+            self.currentIdx = self.testCollectionIndices(self.idxCounter);
             self.testCollection.GetTestCase(self.currentIdx).Setup;
         end
         
@@ -235,10 +150,10 @@ classdef TestRunner < handle
         
         function TeardownDoneCallback(self, ~, eventdata)
             self.idxCounter = self.idxCounter + 1;
-            if(self.idxCounter <= numel(self.testCollectionIdx))
-                self.currentIdx = self.testCollectionIdx(self.idxCounter);
+            if(self.idxCounter <= numel(self.testCollectionIndices))
+                self.currentIdx = self.testCollectionIndices(self.idxCounter);
                 notify(self,'startEvent')
-            elseif(self.idxCounter > numel(self.testCollectionIdx))
+            elseif(self.idxCounter > numel(self.testCollectionIndices))
                 self.startStopPushButton.String = 'Start';
                 self.startStopPushButton.Enable = 'on';
                 self.testListBox.Enable = 'on';
@@ -250,7 +165,7 @@ classdef TestRunner < handle
         
         function StopCallback(self, ~, eventdata)
             testCaseList = self.testCollection.GetTestCaseList;
-            cellfun(@(t) t.Teardown, testCaseList(self.testCollectionIdx(self.idxCounter:end)));
+            cellfun(@(t) t.Teardown, testCaseList(self.testCollectionIndices(self.idxCounter:end)));
             self.idxCounter = 1;
             
         end
@@ -260,7 +175,7 @@ classdef TestRunner < handle
             % hObject    handle to pushbutton1 (see GCBO)
             % eventdata  reserved - to be defined in a future version of MATLAB
             % handles    structure with handles and user data (see GUIDATA)
-            if(isempty(self.testCollectionIdx))
+            if(isempty(self.testCollectionIndices))
                 self.startStopPushTool.State = 'off';
                 return
             end
@@ -284,35 +199,35 @@ classdef TestRunner < handle
             
             idxNew = self.testListBox.Value;
             if(isempty(idxNew))
-                if(~isempty(self.testCollectionIdx))
-                    self.UiTeardown(self.testCollectionIdx);
-                    self.testCollectionIdx = idxNew;
+                if(~isempty(self.testCollectionIndices))
+                    self.UiTeardown(self.testCollectionIndices);
+                    self.testCollectionIndices = idxNew;
                 end
                 return
             end
             
-            if(isempty(self.testCollectionIdx))
+            if(isempty(self.testCollectionIndices))
                 self.UiSetup(idxNew)
                 
-            elseif(numel(idxNew) > numel(self.testCollectionIdx))
-                diffIdx = setdiff(idxNew, self.testCollectionIdx);
+            elseif(numel(idxNew) > numel(self.testCollectionIndices))
+                diffIdx = setdiff(idxNew, self.testCollectionIndices);
                 self.UiSetup(diffIdx);
                 
-            elseif numel(idxNew) < numel(self.testCollectionIdx)
-                diffIdx = setdiff(self.testCollectionIdx,idxNew);
+            elseif numel(idxNew) < numel(self.testCollectionIndices)
+                diffIdx = setdiff(self.testCollectionIndices,idxNew);
                 self.UiTeardown(diffIdx);
-                diffIdx = setdiff(idxNew,self.testCollectionIdx);
+                diffIdx = setdiff(idxNew,self.testCollectionIndices);
                 self.UiSetup(diffIdx);
                 
             else % numel(idxNew) == numel(idxOld)
-                if(idxNew ~= self.testCollectionIdx)
-                    self.UiTeardown(self.testCollectionIdx)
-                    diffIdx = setdiff(idxNew, self.testCollectionIdx);
+                if(idxNew ~= self.testCollectionIndices)
+                    self.UiTeardown(self.testCollectionIndices)
+                    diffIdx = setdiff(idxNew, self.testCollectionIndices);
                     self.UiSetup(diffIdx);
                 end
             end
             
-            self.testCollectionIdx = idxNew;
+            self.testCollectionIndices = idxNew;
             
         end
         
@@ -328,8 +243,8 @@ classdef TestRunner < handle
                 
                 if(~isempty(self.testCollection))
                     testCaseList = self.testCollection.GetTestCaseList;
-                    cellfun(@(t) t.UiTeardown, testCaseList(self.testCollectionIdx), 'UniformOutput', false);
-                    self.testCollectionIdx = [];
+                    cellfun(@(t) t.UiTeardown, testCaseList(self.testCollectionIndices), 'UniformOutput', false);
+                    self.testCollectionIndices = [];
                 end
                 [pathName, name, ~] = fileparts(fileName);
                 p = path;
@@ -348,8 +263,6 @@ classdef TestRunner < handle
             % handles    structure with handles and user data (see GUIDATA)
             self.LoadTestCollection
                 
-                
-           
         end
     end
     
