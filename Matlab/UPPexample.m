@@ -2,6 +2,8 @@
 % Sets up the generator to a sine with a given frequency and sets up the
 % analyzer to a fft and rms test
 clear
+p = path;
+addpath('.\UPXCommunication\')
 %% Create an Upx class if it does not already exist
 if(~exist('Upx', 'file'))
     CreateUPxClass('Upx');
@@ -16,7 +18,7 @@ upp = Upx(ser, idQuery, reset);
 enum = InstrumentDrivers.rsupvConstants;
 
 %% Set the desired generator frequency and fft size
-rmsEnable = 0;
+rmsEnable = 1;
 
 genFrequency = 5000.0;
 fftSizeEnum = enum.AnalyzerFftSizeS1k;
@@ -57,7 +59,9 @@ if(~rmsEnable)
     figure
     sb = subplot(1,2,1);
     fftLineHandle = plot(0,0);
-    
+    xlabel('Time [s]'); ylabel('Magnitude [dB]');
+    title(fftLineHandle .Parent, 'Waveform')
+
     fftBuffer = NET.createArray('System.Double', fftSize/2);
     period = 0.1;
     fftMeas.StartMeasurement(period, fftBuffer, fftLineHandle,0)
@@ -72,9 +76,11 @@ waveForm.EnableLogging(true);
 sampleRate = 48000;
 
 sb = subplot(1,2,2);
-wfLineHandle = plot(sb,0,0); 
+wfLineHandle = plot(sb,0,0); xlabel('Time [s]'); ylabel('Voltage [V]');
+title(wfLineHandle.Parent, 'Waveform')
+
 rmsLine = line(wfLineHandle.Parent,[0 waveForm.traceLength], [0 0], 'Color', 'r');
-anno = legend('show');
+anno = legend(rmsLine, 'show');
 waveFormBuffer = NET.createArray('System.Double', sampleRate*waveForm.traceLength);
 period = 0.1;
 waveForm.StartMeasurement(period, waveFormBuffer, wfLineHandle, 0);
@@ -82,7 +88,8 @@ waveForm.StartMeasurement(period, waveFormBuffer, wfLineHandle, 0);
 %% RMS
 if(rmsEnable)
     sb = subplot(1,2,1);
-    rmsBarHandle = bar(0);
+    rmsBarHandle = bar(0); ylabel('Voltage [V]');
+    title(rmsBarHandle.Parent, 'RMS')
     rmsMeas = RMSMeasurement(upp);
     rmsMeas.GetSetup;
     rmsMeas.channel = 1;
@@ -130,3 +137,5 @@ pause(2)
 %% Disconnect from the upp
 upp.Dispose
 
+%% Restore the path
+path(p);

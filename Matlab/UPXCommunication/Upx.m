@@ -1,4 +1,4 @@
-classdef Upx < handle
+classdef Upx
     properties(Access = public)
     end
     
@@ -15,12 +15,11 @@ classdef Upx < handle
             [folder, ~, ~] = fileparts(mfilename('fullpath'));
             oldpath = pwd;
             cd(folder);
-            cd(['.' filesep 'DotNetLibrary'])
+            cd(['..' filesep 'DotNetLibrary'])
             fullpath=pwd;
             cd(oldpath);
             PathToLibrary = [fullpath filesep];
             LibraryName ='UPxComm.dll';
-            
             try
                 asmInfo = NET.addAssembly([PathToLibrary LibraryName]);
                 import InstrumentDrivers.*
@@ -2983,7 +2982,6 @@ classdef Upx < handle
         function [RetVal] = ReadTraceDataSets(self, Subsystem, SubsystemNumber, DataSet, NumberOfResults, Output)
             % ReadTraceDataSets
             % [RetVal] = ReadTraceDataSets(self, Subsystem, SubsystemNumber, DataSet, NumberOfResults, Output)
-            
             [RetVal] = self.upxHandle.ReadTraceDataSets(Subsystem, SubsystemNumber, DataSet, NumberOfResults, Output);
         end
         function [RetVal] = ResetMemoryBuffers(self, FreeBuffers)

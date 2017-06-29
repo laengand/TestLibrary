@@ -1,12 +1,13 @@
 function CreateUPxClass(name)
-    
+    p = path;
+    addpath('..\Misc\');
     newline = [char(13) char(10)];
     [folder, ~, ~] = fileparts(mfilename('fullpath'));
     cd(folder);
     
     % now get the path to the dot net library dll
     oldpath=pwd;
-    cd(['.' filesep 'DotNetLibrary'])
+    cd(['..' filesep 'DotNetLibrary'])
     fullpath=pwd;
     cd(oldpath);
     PathToLibrary = [fullpath filesep];
@@ -45,7 +46,7 @@ function CreateUPxClass(name)
         '[folder, ~, ~] = fileparts(mfilename(' '''' 'fullpath' '''' '));' newline ...
         'oldpath = pwd;' newline ...
         'cd(folder);' newline ...
-        'cd([' '''' '.' '''' ' filesep ' '''' 'DotNetLibrary' '''' '])' newline ...
+        'cd([' '''' '..' '''' ' filesep ' '''' 'DotNetLibrary' '''' '])' newline ...
         'fullpath=pwd;' newline ...
         'cd(oldpath);' newline ...
         'PathToLibrary = [fullpath filesep];' newline ...
@@ -90,6 +91,7 @@ function CreateUPxClass(name)
         fclose(FID);
         SmartIndent(filename);
     end
+    path(p);
 end
 
 

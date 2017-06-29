@@ -1,6 +1,7 @@
 function ConvertTesttoolScript(matlabScriptName, deviceComm, testToolScriptPath)
 % ConvertTesttoolScript 
 % Script to convert a Testtool script into a corresponding matlab script
+    p = addpath('.\Misc\');
     newline = [char(13) char(10)];
     generatedScript = ['function ' matlabScriptName '(deviceComm)' newline];
     testToolScript = fopen(testToolScriptPath,'r');
@@ -57,6 +58,7 @@ function ConvertTesttoolScript(matlabScriptName, deviceComm, testToolScriptPath)
     fprintf(matlabScript , '%s', generatedScript);
     fclose(matlabScript); 
     SmartIndent(matlabScriptName);
+    path(p);
 end
 
 function code = convertCmd(deviceComm,tlineOrig)

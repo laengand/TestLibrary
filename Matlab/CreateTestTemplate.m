@@ -1,7 +1,8 @@
 function CreateTestTemplate(name, deviceComm, opt)
 % CreateTestTemplate
 % Script to create a template to base a device test on
-
+    p = addpath('.\Misc\');
+    
 if(strcmp(opt, 'bare') == 0 && strcmp(opt, 'full') == 0)
     error('not a valid ''opt'' parameters. Use ''full'' or ''bare'' ');
 end
@@ -155,5 +156,5 @@ else
     fclose(FID);
     SmartIndent(filename);
 end
-
+path(p)
 end
