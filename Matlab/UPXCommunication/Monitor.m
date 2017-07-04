@@ -10,6 +10,7 @@ classdef Monitor < Measurement
         function self = Monitor(upx)
             self = self@Measurement(upx);
             self.isTraceData = false;
+            self.tm.Name = [mfilename 'Timer'];
         end
         
         function GetSetup(self)

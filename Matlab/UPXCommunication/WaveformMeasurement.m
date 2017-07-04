@@ -22,6 +22,7 @@ classdef WaveformMeasurement < Measurement
             self.subsystem = self.enum.DispSubsysWav;
             self.isTraceData = true;
             self.waveform = true;
+            self.tm.Name = [mfilename 'Timer'];
         end
         function GetSetup(self)
 %             [~, self.waveform] = self.upx.GetAnalyzerWaveformMonitorState;

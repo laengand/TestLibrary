@@ -1,11 +1,9 @@
 classdef Test8 < ITestCase
     properties
-        notifyEvent
     end
     methods
         function self = Test8(notifyEvent)
-            self@ITestCase;
-            self.notifyEvent = notifyEvent;
+            self@ITestCase(notifyEvent);
         end
         
         function UiSetup(self)

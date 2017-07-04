@@ -20,6 +20,7 @@ classdef RMSMeasurement < Measurement
             self = self@Measurement(upx);
             self.isTraceData = false;
             self.measurement = self.enum.MeasurementFunction;
+            self.tm.Name = [mfilename 'Timer'];
         end
         function GetSetup(self)
             % GetRMSSetup

@@ -52,7 +52,7 @@ classdef Measurement < handle
         
         function [traceLogX, traceLogY] = GetTraceLog(self)
             traceLogX = self.traceLogX;
-            traceLogY = self.traceLogY; 
+            traceLogY = self.traceLogY;
         end
         
         function numLog = GetNumLog (self)
@@ -61,6 +61,7 @@ classdef Measurement < handle
         function tm = GetTimer(self)
             tm = self.tm;
         end
+        
         function StartMeasurement(self, period, buffer, lineHandle, anno)
             self.buffer = buffer;
             self.lineHandle = lineHandle;
@@ -68,7 +69,6 @@ classdef Measurement < handle
             self.tm.ExecutionMode = 'fixedRate';
             self.tm.Period = period;
             self.tm.TimerFcn = @self.timerCallback;
-            self.tm.StopFcn = @self.timerStop;
             self.tm.BusyMode = 'queue';
             self.tm.UserData = self;
             self.upx.StartMeasurementWaitOPC(15000);
@@ -77,13 +77,12 @@ classdef Measurement < handle
         
         function StopMeasurement(self)
             stop(self.tm);
-            self.upx.MeasurementControl(self.enum.MeasStop);            
+            self.upx.MeasurementControl(self.enum.MeasStop);
         end
         
         
         function timerCallback(self, ~, ~)
             
-            %     tic          
             if(self.isTraceData)
                 % Read the trace data of Ax
                 self.upx.ReadTraceDataSets(self.subsystem, 1, self.enum.DataSetAx, self.buffer.Length, self.buffer);
@@ -125,11 +124,7 @@ classdef Measurement < handle
                     end
                 end
             end
-            %     disp(['subs end ' num2str(meas.subsystem) ' ' num2str(toc)]);
         end
         
-        function timerStop(self, ~, ~)
-            
-        end
     end
 end

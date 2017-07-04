@@ -2,200 +2,75 @@ classdef TestRunner < handle
     %UNTITLED Summary of this class goes here
     %   Detailed explanation goes here
     
-    properties(Access = private)
-        els;
+    %     properties(Access = private)
+    properties(Access = public)
         testCollection;
         testCollectionIndices;
         testCollectionPath;
-        idxOld
+        idxOld;
         currentIdx;
+        lockedIdx;
         idxCounter = 1;
-        stop = false;
-        
-        
-        
         testListBox;
         startStopToggleTool;
         openTestPushTool;
         startIcon;
         stopIcon;
         openTestIcon;
+        stateOld;
+        stateNew;
+        stateTimer;
+        statePhaseLog = struct('setup', false,'exercise', false,'verify', false, 'teardown', false);
+        filePaths;
     end
-    events
-        startEvent
-        setupDoneEvent
-        exerciseDoneEvent
-        verifyDoneEvent
-        teardownDoneEvent
-        stopEvent
-    end
-    methods
-        
-        function NotifySetupDone(self)
-            if(~self.stop)
-                notify(self,'setupDoneEvent');
-            end
-        end
-        
-        function NotifyExerciseDone(self)
-            if(~self.stop)
-                notify(self,'exerciseDoneEvent');
-            end
-        end
-        
-        function NotifyVerifyDone(self)
-            if(~self.stop)
-                notify(self,'verifyDoneEvent');
-            end
-        end
-        
-        function NotifyTeardownDone(self)
-            if(~self.stop)
-                notify(self,'teardownDoneEvent');
-            end
-        end
-        
-        
-        function self = TestRunner(hObject)
-            
-            self.testListBox = findobj(hObject,'tag', 'testListbox');
-            self.testListBox.Callback = @self.TestListboxCallback;
-            self.testListBox.Max = 2;
-            self.testListBox.Value = [];
-
-            self.openTestIcon = load('openTestIcon.mat');
-            self.openTestIcon = self.openTestIcon.mat;
-            
-            self.openTestPushTool = findobj(hObject,'tag','openTestPushTool');
-            self.openTestPushTool.ClickedCallback = @self.OpenTestPushToolClickedCallback;
-                        
-            self.startIcon = load('startIcon.mat');
-            self.startIcon = self.startIcon.mat;
-        
-            self.startStopToggleTool = findobj(hObject,'tag','startStopToggletool');
-            self.startStopToggleTool.ClickedCallback = @self.StartStopPushButtonCallback;
-
-            self.stopIcon = load('stopIcon.mat');
-            self.stopIcon = self.stopIcon.mat;
-            
-            self.els{1} = addlistener(self,'startEvent', @self.StartCallback);
-            self.els{end}.Recursive = 1;
-            self.els{end + 1} = addlistener(self,'setupDoneEvent', @self.SetupDoneCallback);
-            self.els{end}.Recursive = 1;
-            self.els{end + 1} = addlistener(self,'exerciseDoneEvent', @self.ExerciseDoneCallback);
-            self.els{end}.Recursive = 1;
-            self.els{end + 1} = addlistener(self,'verifyDoneEvent', @self.VerifyDoneCallback);
-            self.els{end}.Recursive = 1;
-            self.els{end + 1} = addlistener(self,'teardownDoneEvent', @self.TeardownDoneCallback);
-            self.els{end}.Recursive = 1;
-            self.els{end + 1} = addlistener(self,'stopEvent', @self.StopCallback);
-            self.els{end}.Recursive = 1;
-        end
-        function SetTestCollection(self, testCollection)
-            self.testCollection = testCollection;
-        end
-        
-        function SetTestCollectionIndices(self, testCollectionIndices)
-            self.testCollectionIndices = testCollectionIndices;
-            
-        end
-        function UiSetup(self, idx)
-            testCaseList = self.testCollection.GetTestCaseList;
-            cellfun(@(t) t.UiSetup, testCaseList(idx));
-        end
-        
-        function Start(self)
-            self.startStopPushButton.String = 'Stop';
-            self.startStopPushButton.Enable = 'on';
-            self.testListBox.Enable = 'off';
-            self.stop = false;
-            self.startStopPushTool.CData = self.stopIcon;
-            self.idxCounter = 1;
-            notify(self,'startEvent');
-        end
-        function Stop(self)
-            self.startStopPushButton.String= 'Start';
-            self.startStopPushButton.Enable = 'on';
-            self.testListBox.Enable = 'on';
-            self.startStopPushTool.CData = self.startIcon;
-            self.stop = true;
-            notify(self,'stopEvent');
-        end
-        
-        function UiTeardown(self, idx)
-            testCaseList = self.testCollection.GetTestCaseList;
-            cellfun(@(t) t.UiTeardown, testCaseList(idx));
-        end
-        
-        
-        
-        
-        %% event callbacks
-        function StartCallback(self, ~, eventdata)
-            self.currentIdx = self.testCollectionIndices(self.idxCounter);
-            self.testCollection.GetTestCase(self.currentIdx).Setup;
-        end
-        
-        function SetupDoneCallback(self, ~, eventdata)
-            self.testCollection.GetTestCase(self.currentIdx).Exercise;
-        end
-        
-        function ExerciseDoneCallback(self, ~, eventdata)    
-            self.testCollection.GetTestCase(self.currentIdx).Verify;
-        end
-        
-        function VerifyDoneCallback(self, ~, eventdata)           
-            self.testCollection.GetTestCase(self.currentIdx).Teardown;
-        end
-        
-        function TeardownDoneCallback(self, ~, eventdata)
-            self.idxCounter = self.idxCounter + 1;
-            if(self.idxCounter <= numel(self.testCollectionIndices))
-                self.currentIdx = self.testCollectionIndices(self.idxCounter);
-                notify(self,'startEvent')
-            elseif(self.idxCounter > numel(self.testCollectionIndices))
-                self.startStopPushButton.String = 'Start';
-                self.startStopPushButton.Enable = 'on';
-                self.testListBox.Enable = 'on';
-                self.startStopPushTool.CData = self.startIcon;
-                self.startStopPushTool.State = 'off';
-            end
-        end
-        
-        
-        function StopCallback(self, ~, eventdata)
-            testCaseList = self.testCollection.GetTestCaseList;
-            cellfun(@(t) t.Teardown, testCaseList(self.testCollectionIndices(self.idxCounter:end)));
-            self.idxCounter = 1;
-            
-        end
-        
-        % --- Executes on button press in pushbutton1.
-        function StartStopPushButtonCallback(self, hObject, eventdata, handles)
-            % hObject    handle to pushbutton1 (see GCBO)
-            % eventdata  reserved - to be defined in a future version of MATLAB
-            % handles    structure with handles and user data (see GUIDATA)
-            if(isempty(self.testCollectionIndices))
-                self.startStopPushTool.State = 'off';
+    
+    methods(Access = private)
+        function stateLoop(self, ~, ~)
+            try
+            if(self.stateNew == self.stateOld)
                 return
             end
-%             if (strcmp(self.startStopPushButton.String,'Start')) || strcmp(self.startStopPushTool.State,'on'))
-            if(strcmp(self.startStopPushTool.State,'on'))
+            self.stateOld = self.stateNew;
+            switch(self.stateNew)
+                case TestRunnerState.IDLE
+                    
+                case TestRunnerState.START
+                    self.StartTest;
+                    
+                case TestRunnerState.SETUP
+                    self.SetupTest;
+                    
+                case TestRunnerState.EXERCISE
+                    self.ExerciseTest;
+                    
+                case TestRunnerState.VERIFY
+                    self.VerifyTest;
+                    
+                case TestRunnerState.TEARDOWN
+                    self.TeardownTest;
+                    
+                case TestRunnerState.STOP
+                    self.StopTest;
+            end
+            catch ex
+                disp(ex.message)
+            end
+        end
+        %% UI callbacks
+        function StartStopToggleToolCallback(self, ~, ~, ~)
+            if(isempty(self.testCollectionIndices))
+                self.startStopToggleTool.State = 'off';
+                return
+            end
+            
+            if(strcmp(self.startStopToggleTool.State,'on'))
                 self.Start
             else
-                self.Stop
+                self.Stop;
             end
         end
         
-        % --- Executes on selection change in listbox1.
-        function TestListboxCallback(self, ~, eventdata, handles)
-            % hObject    handle to listbox1 (see GCBO)
-            % eventdata  reserved - to be defined in a future version of MATLAB
-            % handles    structure with handles and user data (see GUIDATA)
-            
-            % Hints: contents = cellstr(get(hObject,'String')) returns listbox1 contents as cell array
-            %        contents{get(hObject,'Value')} returns selected item from listbox1
-            
+        function TestListboxCallback(self, ~, ~, ~)
             
             idxNew = self.testListBox.Value;
             if(isempty(idxNew))
@@ -231,14 +106,193 @@ classdef TestRunner < handle
             
         end
         
-        function LoadTestCollection(self, fileName)
-            if(nargin == 1) 
-                try
-                    [fileName, self.testCollectionPath] = uigetfile('*.m','Select the Test collection file', self.testCollectionPath);
-                catch
-                    [fileName, self.testCollectionPath] = uigetfile('*.m','Select the Test collection file');
+        function OpenTestPushToolClickedCallback(self, ~, ~, ~)
+            self.LoadTestCollection
+        end
+        
+        function StartTest(self, ~, ~)
+                        
+            self.testListBox.Enable = 'off';
+            self.startStopToggleTool.CData = self.stopIcon;
+            
+            self.idxCounter = 1;
+            if(~isempty(self.testCollectionIndices))
+                self.currentIdx = self.testCollectionIndices(self.idxCounter);
+                self.stateNew = TestRunnerState.SETUP;
+            end
+        end
+        
+        function SetupTest(self)
+            self.statePhaseLog.setup = true;
+            self.testCollection.GetTestCase(self.currentIdx).Setup;
+        end
+        
+        function ExerciseTest(self)
+            self.statePhaseLog.exercise = true;
+            self.testCollection.GetTestCase(self.currentIdx).Exercise;
+        end
+        
+        function VerifyTest(self)
+            self.statePhaseLog.verify = true;
+                self.testCollection.GetTestCase(self.currentIdx).Verify;
+        end
+        
+        function TeardownTest(self)
+            self.statePhaseLog.teardown = true;
+            self.testCollection.GetTestCase(self.currentIdx).Teardown;
+        end
+                
+        function StopTest(self, ~, ~)
+            self.testListBox.Enable = 'on';
+            self.startStopToggleTool.CData = self.startIcon;
+            if(~self.statePhaseLog.teardown)
+                self.TeardownTest;
+            end
+            self.ClearStatePhaseLog;
+            %             cellfun(@(t) t.Teardown, testCaseList(self.testCollectionIndices(self.idxCounter:end)));
+            self.idxCounter = 1;
+        end
+        
+        function ClearStatePhaseLog(self)
+            self.statePhaseLog.setup = false;
+            self.statePhaseLog.exercise = false;
+            self.statePhaseLog.verify = false;
+            self.statePhaseLog.teardown = false;    
+        end
+    end
+    
+    methods(Access = public)
+        
+        function self = TestRunner(hObject)
+            % Constructor
+            self.filePaths = path;
+            self.stateNew = TestRunnerState.IDLE;
+            self.stateOld = self.stateNew;
+            self.stateTimer = timer;
+            self.stateTimer.TimerFcn = @self.stateLoop;
+            self.stateTimer.Period = 0.5;
+            self.stateTimer.Name = [mfilename 'Timer'];
+            self.stateTimer.ExecutionMode = 'fixedSpacing';
+            self.stateTimer.BusyMode = 'queue';
+            if(nargin == 1)
+                self.testListBox = findobj(hObject,'tag', 'testListbox');
+                self.testListBox.Callback = @self.TestListboxCallback;
+                self.testListBox.Max = 2;
+                self.testListBox.Value = [];
+                
+                self.openTestIcon = load('openTestIcon.mat');
+                self.openTestIcon = self.openTestIcon.mat;
+                
+                self.openTestPushTool = findobj(hObject,'tag','openTestPushTool');
+                self.openTestPushTool.ClickedCallback = @self.OpenTestPushToolClickedCallback;
+                
+                self.startIcon = load('startIcon.mat');
+                self.startIcon = self.startIcon.mat;
+                
+                self.startStopToggleTool = findobj(hObject,'tag','startStopToggletool');
+                self.startStopToggleTool.ClickedCallback = @self.StartStopToggleToolCallback;
+                
+                self.stopIcon = load('stopIcon.mat');
+                self.stopIcon = self.stopIcon.mat;
+            end
+            
+            start(self.stateTimer);
+        end
+        
+        function delete(self)
+            % Destructor
+            stop(self.stateTimer);
+            delete(self.stateTimer);
+            path(self.filePaths);
+        end
+        
+        function SetTestCollection(self, testCollection)
+            % SetTestCollection(testCollection)
+            % Sets the active test collection
+            self.testCollection = testCollection;
+        end
+        
+        function SetTestCollectionIndices(self, testCollectionIndices)
+            % SetTestCollectionIndices(testCollectionIndices)
+            % Sets the active test collection indices
+            self.testCollectionIndices = testCollectionIndices;
+        end
+        
+        function Start(self)
+            % Start
+            % Starts the active tests based on the test collection and the
+            % selected indices
+            self.stateNew = TestRunnerState.START;
+        end
+        
+        function Stop(self)
+            % Stop
+            % Stops the current test
+            self.stateNew = TestRunnerState.STOP;
+        end
+        
+        %% Test events
+        function NotifySetupDone(self)
+            if(self.stateNew ~= TestRunnerState.STOP)
+                self.stateNew = TestRunnerState.EXERCISE;
+            end
+        end
+        
+        function NotifyExerciseDone(self)
+            if(self.stateNew ~= TestRunnerState.STOP)
+                self.stateNew = TestRunnerState.VERIFY;
+            end
+        end
+        
+        function NotifyVerifyDone(self)
+            if(self.stateNew ~= TestRunnerState.STOP)
+                self.stateNew = TestRunnerState.TEARDOWN;
+            end
+        end
+        
+        function NotifyTeardownDone(self)
+            if(self.stateNew ~= TestRunnerState.STOP)
+                self.idxCounter = self.idxCounter + 1;
+                if(self.idxCounter <= numel(self.testCollectionIndices))
+                    self.currentIdx = self.testCollectionIndices(self.idxCounter);
+                    self.ClearStatePhaseLog;
+                    self.stateNew = TestRunnerState.SETUP;
+                    
+                elseif(self.idxCounter > numel(self.testCollectionIndices))
+                    self.testListBox.Enable = 'on';
+                    self.startStopToggleTool.CData = self.startIcon;
+                    self.startStopToggleTool.State = 'off';
+                    self.stateNew = TestRunnerState.IDLE;
                 end
             end
+        end
+        
+        %% Test UI callbacks
+        function UiSetup(self, idx)
+            if(~isempty(self.testCollection))
+                testCaseList = self.testCollection.GetTestCaseList;
+                cellfun(@(t) t.UiSetup, testCaseList(idx));
+            end
+        end
+        
+        function UiTeardown(self, idx)
+            testCaseList = self.testCollection.GetTestCaseList;
+            cellfun(@(t) t.UiTeardown, testCaseList(idx));
+        end
+        
+        
+        %% Event callbacks
+
+        function LoadTestCollection(self, fileName)
+            pathName = '';
+            if(nargin == 1)
+                try
+                    [fileName, pathName] = uigetfile('*.m','Select the Test collection file', self.testCollectionPath);
+                catch
+                    [fileName, pathName] = uigetfile('*.m','Select the Test collection file');
+                end
+            end
+            self.testCollectionPath = pathName;
             if(fileName ~= 0)
                 
                 if(~isempty(self.testCollection))
@@ -246,23 +300,23 @@ classdef TestRunner < handle
                     cellfun(@(t) t.UiTeardown, testCaseList(self.testCollectionIndices), 'UniformOutput', false);
                     self.testCollectionIndices = [];
                 end
-                [pathName, name, ~] = fileparts(fileName);
-                p = path;
-                path(p, pathName)
+                [~, name, ~] = fileparts(fileName);
+                
+                addpath(pathName);
                 
                 testCollectionFuncHandle = str2func(name);
-                self.testCollection = testCollectionFuncHandle(self);
-                path(p);
-                self.testListBox.Value = [];
-                self.testListBox.String = cellfun(@(t) t.GetName, self.testCollection.GetTestCaseList, 'UniformOutput', false);
-            end
-        end
-        function OpenTestPushToolClickedCallback(self, hObject, eventdata, handles)
-            % hObject    handle to uipushtool3 (see GCBO)
-            % eventdata  reserved - to be defined in a future version of MATLAB
-            % handles    structure with handles and user data (see GUIDATA)
-            self.LoadTestCollection
+                temp = testCollectionFuncHandle(self);
                 
+                if(isa(temp,'TestCollection'))
+                    self.testCollection = temp;
+                    
+                    if(~isempty(self.testListBox))
+                        self.testListBox.Value = [];
+                        self.testListBox.String = cellfun(@(t) t.GetName, self.testCollection.GetTestCaseList, 'UniformOutput', false);
+                    end
+                end
+                
+            end
         end
     end
     

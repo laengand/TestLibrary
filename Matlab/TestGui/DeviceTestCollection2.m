@@ -1,5 +1,6 @@
 function [testCollection] = DeviceTestCollection2(notifyEvent)
-    p = addpath('../Test');
+    addpath('..\Test\');
+    addpath('..\');
     testCollection = TestCollection;
     testCollection.Attach(Test1(notifyEvent))
     testCollection.Attach(Test2(notifyEvent))
@@ -14,5 +15,5 @@ function [testCollection] = DeviceTestCollection2(notifyEvent)
     testCollection.Attach(UPPEagleNarrowbandTest(notifyEvent))
     testCollection.Attach(UPPEagleNarrowbandTest(notifyEvent))
     testCollection.Attach(UPPEagleNarrowbandTest(notifyEvent))
-    path(p)
+    
 end

@@ -24,19 +24,11 @@ classdef TestCollection < handle
         function testCaseList = GetTestCaseList(self)
             testCaseList = self.testCaseList;
         end
+        
         function testCase = GetTestCase(self, idx)
             testCase = self.testCaseList{idx};
         end
-%         function Run(self)
-%             % Run
-%             % Runs any test case attached to the test case list
-%             for i = 1:numel(self.testCaseList)
-%                 self.testCaseList{i}.Setup;
-%                 self.testCaseList{i}.Exercise;
-%                 self.testCaseList{i}.Verify;
-%                 self.testCaseList{i}.Teardown;
-%             end
-%         end
+        
     end
     
 end

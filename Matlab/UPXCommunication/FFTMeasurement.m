@@ -27,6 +27,7 @@ classdef FFTMeasurement < Measurement
             self = self@Measurement(upx);
             self.subsystem = self.enum.DispSubsysFft;
             self.isTraceData = true;
+            self.tm.Name = [mfilename 'Timer']; 
         end
         
         function GetSetup(self)
