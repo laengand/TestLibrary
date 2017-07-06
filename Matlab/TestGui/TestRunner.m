@@ -12,16 +12,21 @@ classdef TestRunner < handle
         lockedIdx;
         idxCounter = 1;
         testListBox;
-        startStopToggleTool;
-        openTestPushTool;
+        
+        openTestPushtool;
+        startContPushtool
+        stopPushtool;
+        
         startIcon;
         stopIcon;
+        continueIcon;
         openTestIcon;
         stateOld;
         stateNew;
         stateTimer;
         statePhaseLog = struct('setup', false,'exercise', false,'verify', false, 'teardown', false);
         filePaths;
+        startContState = 'start';
     end
     
     methods(Access = private)
@@ -54,19 +59,53 @@ classdef TestRunner < handle
             end
             catch ex
                 disp(ex.message)
+                for k=1:length(ex.stack)
+                    ex.stack(k)
+                end
+   
             end
         end
-        %% UI callbacks
-        function StartStopToggleToolCallback(self, ~, ~, ~)
-            if(isempty(self.testCollectionIndices))
-                self.startStopToggleTool.State = 'off';
+        %% UI callbacks        
+        function StartContPushtoolCallback(self, ~, ~, ~)
+             if(isempty(self.testCollectionIndices))
                 return
-            end
+             end
             
-            if(strcmp(self.startStopToggleTool.State,'on'))
-                self.Start
-            else
-                self.Stop;
+            if(strcmp(self.startContState, 'start'))
+                self.startContState = 'continue';
+                self.Start;
+                self.startContPushtool.CData = self.continueIcon;
+                self.startContPushtool.TooltipString = 'Continue';
+                self.stopPushtool.Enable = 'on';
+                self.testListBox.Enable = 'off';
+                
+            elseif(strcmp(self.startContState, 'continue'))
+                self.ContinuePushtoolCallback;
+            end
+        end
+        
+        function StopPushtoolCallback(self, ~, ~, ~)
+            self.Stop;
+            self.testListBox.Enable = 'on';
+            self.startContState = 'start';
+            self.startContPushtool.CData = self.startIcon;
+            self.stopPushtool.Enable = 'off';
+        end
+        
+        function ContinuePushtoolCallback(self, ~, ~, ~)
+            switch(self.stateOld)
+                    
+                case TestRunnerState.SETUP
+                    self.NotifySetupDone;
+                    
+                case TestRunnerState.EXERCISE
+                    self.NotifyExerciseDone;
+                    
+                case TestRunnerState.VERIFY
+                    self.NotifyVerifyDone;
+                    
+                case TestRunnerState.TEARDOWN
+                    self.NotifyTeardownDone;
             end
         end
         
@@ -106,15 +145,11 @@ classdef TestRunner < handle
             
         end
         
-        function OpenTestPushToolClickedCallback(self, ~, ~, ~)
+        function OpenTestPushtoolClickedCallback(self, ~, ~, ~)
             self.LoadTestCollection
         end
         
         function StartTest(self, ~, ~)
-                        
-            self.testListBox.Enable = 'off';
-            self.startStopToggleTool.CData = self.stopIcon;
-            
             self.idxCounter = 1;
             if(~isempty(self.testCollectionIndices))
                 self.currentIdx = self.testCollectionIndices(self.idxCounter);
@@ -134,7 +169,7 @@ classdef TestRunner < handle
         
         function VerifyTest(self)
             self.statePhaseLog.verify = true;
-                self.testCollection.GetTestCase(self.currentIdx).Verify;
+            self.testCollection.GetTestCase(self.currentIdx).Verify;
         end
         
         function TeardownTest(self)
@@ -143,14 +178,14 @@ classdef TestRunner < handle
         end
                 
         function StopTest(self, ~, ~)
-            self.testListBox.Enable = 'on';
-            self.startStopToggleTool.CData = self.startIcon;
+            
             if(~self.statePhaseLog.teardown)
                 self.TeardownTest;
             end
             self.ClearStatePhaseLog;
             %             cellfun(@(t) t.Teardown, testCaseList(self.testCollectionIndices(self.idxCounter:end)));
             self.idxCounter = 1;
+            self.stateNew = TestRunnerState.IDLE;
         end
         
         function ClearStatePhaseLog(self)
@@ -183,17 +218,26 @@ classdef TestRunner < handle
                 self.openTestIcon = load('openTestIcon.mat');
                 self.openTestIcon = self.openTestIcon.mat;
                 
-                self.openTestPushTool = findobj(hObject,'tag','openTestPushTool');
-                self.openTestPushTool.ClickedCallback = @self.OpenTestPushToolClickedCallback;
+                self.openTestPushtool = findobj(hObject,'tag','openTestPushtool');
+                self.openTestPushtool.ClickedCallback = @self.OpenTestPushtoolClickedCallback;
                 
                 self.startIcon = load('startIcon.mat');
                 self.startIcon = self.startIcon.mat;
                 
-                self.startStopToggleTool = findobj(hObject,'tag','startStopToggletool');
-                self.startStopToggleTool.ClickedCallback = @self.StartStopToggleToolCallback;
-                
                 self.stopIcon = load('stopIcon.mat');
                 self.stopIcon = self.stopIcon.mat;
+                
+                self.stopPushtool = findobj(hObject,'tag','stopPushtool');
+                self.stopPushtool.ClickedCallback = @self.StopPushtoolCallback;
+                self.stopPushtool.Enable = 'off';
+                
+                self.continueIcon = load('continueIcon.mat');
+                self.continueIcon = self.continueIcon.mat;
+                
+                self.startContPushtool = findobj(hObject,'tag','startContPushtool');
+                self.startContPushtool.ClickedCallback = @self.StartContPushtoolCallback; 
+                self.startContPushtool.CData = self.startIcon;
+                
             end
             
             start(self.stateTimer);
@@ -260,8 +304,10 @@ classdef TestRunner < handle
                     
                 elseif(self.idxCounter > numel(self.testCollectionIndices))
                     self.testListBox.Enable = 'on';
-                    self.startStopToggleTool.CData = self.startIcon;
-                    self.startStopToggleTool.State = 'off';
+                    self.stopPushtool.Enable = 'off';
+                    self.startContState = 'start';
+                    self.startContPushtool.CData = self.startIcon;
+                    self.startContPushtool.TooltipString = 'Start';
                     self.stateNew = TestRunnerState.IDLE;
                 end
             end

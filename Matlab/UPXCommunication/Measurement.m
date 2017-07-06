@@ -24,7 +24,8 @@ classdef Measurement < handle
         % Numeric display variables
         measurement;
         channel;
-        
+        preMeasFunction;
+        postMeasFunction;
     end
     
     methods
@@ -82,7 +83,9 @@ classdef Measurement < handle
         
         
         function timerCallback(self, ~, ~)
-            
+            if(~isempty(self.preMeasFunction))
+                self.preMeasFunction(self)
+            end
             if(self.isTraceData)
                 % Read the trace data of Ax
                 self.upx.ReadTraceDataSets(self.subsystem, 1, self.enum.DataSetAx, self.buffer.Length, self.buffer);
@@ -123,6 +126,9 @@ classdef Measurement < handle
                         self.numLog{end, 2} = units;
                     end
                 end
+            end
+            if(~isempty(self.postMeasFunction))
+                self.postMeasFunction(self)
             end
         end
         

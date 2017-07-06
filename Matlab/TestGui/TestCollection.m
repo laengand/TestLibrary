@@ -1,22 +1,19 @@
 classdef TestCollection < handle
-    %UNTITLED3 Summary of this class goes here
-    %   Detailed explanation goes here
+    %TestCollection 
+    %   Class to contain one or more tests
     
-    properties
+    properties(Access = private)
         testCaseList = {}
     end
     
     methods
         function Attach(self, testCase)
-            % Attach
-            % Adds a test case to the end of the test case list
+            % Attach Adds a test case to the end of the test case list
             self.testCaseList{end + 1} = testCase;
         end
         
         function Detach(self, testCase)
-            % Detach
-            % Find the specific test case and remove it from the list of 
-            % test cases
+            % Detach Finds the specific test case and removes it from the list of test cases
             idx = cellfun(@(t) testCase == t, self.testCaseList);
             self.testCaseList = self.testCaseList(~idx);
         end
