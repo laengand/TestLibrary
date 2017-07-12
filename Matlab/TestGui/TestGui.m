@@ -22,7 +22,7 @@ function varargout = TestGui(varargin)
 
 % Edit the above text to modify the response to help TestGui
 
-% Last Modified by GUIDE v2.5 29-Jun-2017 08:44:45
+% Last Modified by GUIDE v2.5 11-Jul-2017 09:07:07
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -75,4 +75,19 @@ function varargout = TestGui_OutputFcn(hObject, eventdata, handles)
 
 % Get default command line output from handles structure
 varargout{1} = handles;
+end
+
+
+% --- Executes when user attempts to close figure1.
+function figure1_CloseRequestFcn(hObject, eventdata, handles)
+% hObject    handle to figure1 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: delete(hObject) closes the figure
+if(isvalid(handles.testRunner))
+    delete(handles.testRunner);
+end
+delete(hObject);
+
 end

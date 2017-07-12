@@ -2,12 +2,12 @@ function [testCollection] = DeviceTestCollection1(notifyEvent)
     
     % Init Testlibrary
     [folder, name, ext] = fileparts(mfilename('fullpath'));
-    cd(folder);
+%     cd(folder);
     
     % now get the path to the dot net library dll
     oldpath=pwd;
 %     addpath('..\TestLibrary\Matlab\')
-    cd('..\DotNetLibrary')
+    cd([folder '\..\DotNetLibrary'])
     fullpath=pwd;
     cd(oldpath);
     PathToLibrary = [fullpath filesep];
@@ -38,11 +38,12 @@ function [testCollection] = DeviceTestCollection1(notifyEvent)
     % Get the instance of the generated class
     deviceComm = commGen.generatedCommunicator;
     
-    p = addpath('..\..\..\EagleTest\');
+    p = addpath([folder '\..\..\..\EagleTest\']);
     addpath('..\');
+    addpath([folder '\..\']);
     testCollection = Eagle_XTest(notifyEvent, deviceComm);
     testCollection.Connect;
-    testCollection.Disconnect;
+%     testCollection.Disconnect;
     
     path(p)
 end

@@ -16,6 +16,7 @@ classdef TestRunner < handle
         openTestPushtool;
         startContPushtool
         stopPushtool;
+        testCollectionText;
         
         startIcon;
         stopIcon;
@@ -85,11 +86,13 @@ classdef TestRunner < handle
         end
         
         function StopPushtoolCallback(self, ~, ~, ~)
-            self.Stop;
-            self.testListBox.Enable = 'on';
             self.startContState = 'start';
+            self.Stop;
             self.startContPushtool.CData = self.startIcon;
+            self.startContPushtool.TooltipString = 'Start';
             self.stopPushtool.Enable = 'off';
+            self.testListBox.Enable = 'on';
+            
         end
         
         function ContinuePushtoolCallback(self, ~, ~, ~)
@@ -230,14 +233,16 @@ classdef TestRunner < handle
                 self.stopPushtool = findobj(hObject,'tag','stopPushtool');
                 self.stopPushtool.ClickedCallback = @self.StopPushtoolCallback;
                 self.stopPushtool.Enable = 'off';
-                
+                                
                 self.continueIcon = load('continueIcon.mat');
                 self.continueIcon = self.continueIcon.mat;
                 
                 self.startContPushtool = findobj(hObject,'tag','startContPushtool');
                 self.startContPushtool.ClickedCallback = @self.StartContPushtoolCallback; 
                 self.startContPushtool.CData = self.startIcon;
-                
+                                
+                self.testCollectionText = findobj(hObject,'tag','testCollectionText');
+                self.testCollectionText.String= 'No test collection';
             end
             
             start(self.stateTimer);
@@ -311,6 +316,7 @@ classdef TestRunner < handle
                     self.stateNew = TestRunnerState.IDLE;
                 end
             end
+            self.ClearStatePhaseLog;
         end
         
         %% Test UI callbacks
@@ -327,8 +333,6 @@ classdef TestRunner < handle
         end
         
         
-        %% Event callbacks
-
         function LoadTestCollection(self, fileName)
             pathName = '';
             if(nargin == 1)
@@ -344,6 +348,7 @@ classdef TestRunner < handle
                 if(~isempty(self.testCollection))
                     testCaseList = self.testCollection.GetTestCaseList;
                     cellfun(@(t) t.UiTeardown, testCaseList(self.testCollectionIndices), 'UniformOutput', false);
+                    delete(self.testCollection);
                     self.testCollectionIndices = [];
                 end
                 [~, name, ~] = fileparts(fileName);
@@ -355,7 +360,7 @@ classdef TestRunner < handle
                 
                 if(isa(temp,'TestCollection'))
                     self.testCollection = temp;
-                    
+                    self.testCollectionText.String = name;
                     if(~isempty(self.testListBox))
                         self.testListBox.Value = [];
                         self.testListBox.String = cellfun(@(t) t.GetName, self.testCollection.GetTestCaseList, 'UniformOutput', false);
