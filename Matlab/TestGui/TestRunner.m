@@ -25,7 +25,7 @@ classdef TestRunner < handle
         stateOld;
         stateNew;
         stateTimer;
-        statePhaseLog = struct('setup', false,'exercise', false,'verify', false, 'teardown', false);
+        statePhaseLog = struct('setup', false, 'exercise', false, 'verify', false, 'teardown', false);
         filePaths;
         startContState = 'start';
     end
@@ -33,37 +33,36 @@ classdef TestRunner < handle
     methods(Access = private)
         function stateLoop(self, ~, ~)
             try
-            if(self.stateNew == self.stateOld)
-                return
-            end
-            self.stateOld = self.stateNew;
-            switch(self.stateNew)
-                case TestRunnerState.IDLE
-                    
-                case TestRunnerState.START
-                    self.StartTest;
-                    
-                case TestRunnerState.SETUP
-                    self.SetupTest;
-                    
-                case TestRunnerState.EXERCISE
-                    self.ExerciseTest;
-                    
-                case TestRunnerState.VERIFY
-                    self.VerifyTest;
-                    
-                case TestRunnerState.TEARDOWN
-                    self.TeardownTest;
-                    
-                case TestRunnerState.STOP
-                    self.StopTest;
-            end
+                if(self.stateNew == self.stateOld)
+                    return
+                end
+                self.stateOld = self.stateNew;
+                switch(self.stateNew)
+                    case TestRunnerState.IDLE
+                        
+                    case TestRunnerState.START
+                        self.StartTest;
+                        
+                    case TestRunnerState.SETUP
+                        self.SetupTest;
+                        
+                    case TestRunnerState.EXERCISE
+                        self.ExerciseTest;
+                        
+                    case TestRunnerState.VERIFY
+                        self.VerifyTest;
+                        
+                    case TestRunnerState.TEARDOWN
+                        self.TeardownTest;
+                        
+                    case TestRunnerState.STOP
+                        self.StopTest;
+                end
             catch ex
                 disp(ex.message)
                 for k=1:length(ex.stack)
                     ex.stack(k)
                 end
-   
             end
         end
         %% UI callbacks        
@@ -206,6 +205,12 @@ classdef TestRunner < handle
             self.filePaths = path;
             self.stateNew = TestRunnerState.IDLE;
             self.stateOld = self.stateNew;
+            
+            oldTimers = timerfindall('Name', [mfilename 'Timer']);
+            if(~isempty(oldTimers))
+                stop(oldTimers);
+                delete(oldTimers);
+            end
             self.stateTimer = timer;
             self.stateTimer.TimerFcn = @self.stateLoop;
             self.stateTimer.Period = 0.5;
@@ -250,6 +255,7 @@ classdef TestRunner < handle
         
         function delete(self)
             % Destructor
+            self.UiTeardown(self.testCollectionIndices);
             stop(self.stateTimer);
             delete(self.stateTimer);
             path(self.filePaths);
