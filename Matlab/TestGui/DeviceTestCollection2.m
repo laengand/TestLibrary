@@ -1,6 +1,7 @@
 function [testCollection] = DeviceTestCollection2(notifyEvent)
-    addpath('..\Test\');
-    addpath('..\');
+    folder = fileparts(mfilename('fullpath'));
+    addpath([folder '\..\Test\']);
+    addpath([folder '\..\']);
     testCollection = TestCollection;
     testCollection.Attach(Test1(notifyEvent))
     testCollection.Attach(Test2(notifyEvent))
