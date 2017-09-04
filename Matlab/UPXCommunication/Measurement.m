@@ -7,7 +7,6 @@ classdef Measurement < handle
     properties(Access = protected)
         upx;
         tm;
-        enum;
         subsystem;
         buffer;
         isTraceData;
@@ -17,6 +16,7 @@ classdef Measurement < handle
         numLog;
     end
     properties
+        enum;
         
         lineHandle;
         anno;
@@ -113,7 +113,7 @@ classdef Measurement < handle
                 if(isgraphics(self.lineHandle,'bar') )
                     self.lineHandle.YData = measurementResult;
                 end
-                if(isgraphics(self.anno,'legend') )
+                if(isgraphics(self.anno,'legend') || isgraphics(self.anno,'uicontrol'))
                     self.anno.String = [num2str(measurementResult) ' ' units];
                 end
                 

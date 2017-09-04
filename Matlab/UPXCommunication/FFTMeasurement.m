@@ -11,7 +11,7 @@ classdef FFTMeasurement < Measurement
         %         postFFT;
         fftSize;
         window;
-        avgMode
+        avgMode;
         avgCount;
         triggered;
         %         start;

@@ -10,7 +10,7 @@ if(~exist('Upx', 'file'))
 end
 
 %% Create an instance of the Upx class
-ser = '120003'; % refer to the backplate of the individual device.
+ser = '120082'; % refer to the backplate of the individual device.
 reset = true;
 idQuery = true;
 
@@ -79,7 +79,12 @@ sb = subplot(1,2,2);
 wfLineHandle = plot(sb,0,0); xlabel('Time [s]'); ylabel('Voltage [V]');
 title(wfLineHandle.Parent, 'Waveform')
 
-rmsLine = line(wfLineHandle.Parent,[0 waveForm.traceLength], [0 0], 'Color', 'r');
+hold on
+
+rmsLine = line([0 waveForm.traceLength], [0 0], 'Color', 'r');
+
+hold off
+
 anno = legend(rmsLine, 'show');
 waveFormBuffer = NET.createArray('System.Double', sampleRate*waveForm.traceLength);
 period = 0.1;
