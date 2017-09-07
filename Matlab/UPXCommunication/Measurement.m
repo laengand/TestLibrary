@@ -68,7 +68,7 @@ classdef Measurement < handle
             self.lineHandle = lineHandle;
             self.anno = anno;
             self.tm.ExecutionMode = 'fixedRate';
-            self.tm.Period = period;
+            self.tm.Period = round(period,3);
             self.tm.TimerFcn = @self.timerCallback;
             self.tm.BusyMode = 'queue';
             self.tm.UserData = self;

@@ -1,6 +1,6 @@
 classdef THDMeasurement < Measurement
     
-    properties(Access = private) 
+    properties(Access = public) 
         measMode;
         harmonicState;
         fundamental
@@ -63,6 +63,8 @@ classdef THDMeasurement < Measurement
 %             [~, self.refinement] = self.upx.GetAnalyzerRefinement;
         end
         function SetSetup(self)
+            self.upx.SetGeneratorChannelMode(0);    % RSUPV_GEN_CH_OFF (0) - Off
+            
             self.upx.SetAnalyzerFunction(self.enum.AnalyzerFuncThd);
             self.upx.SetAnalyzerTHDMeasMode(self.measMode);
             
