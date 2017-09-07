@@ -29,7 +29,6 @@ classdef THDMeasurement < Measurement
         function GetSetup(self)
             self.upx.SetAnalyzerFunction(self.enum.AnalyzerFuncThd);
             [~, self.measMode] = self.upx.GetAnalyzerTHDMeasMode;
-            self.measMode = self.enum.AnalyzerThdMmodeSel;
             [~, self.harmonicState(2)] = self.upx.GetAnalyzerTHDHarmonicState(2);
             [~, self.harmonicState(3)] = self.upx.GetAnalyzerTHDHarmonicState(3);
             [~, self.harmonicState(4)] = self.upx.GetAnalyzerTHDHarmonicState(4);
