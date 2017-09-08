@@ -2,6 +2,7 @@ classdef UPPEagleNarrowbandTest < ITestCase & AbstractTest
     properties(Access = private)
         dataLog;
         dataLogIdx = 1;
+        upp;
         fftMeas;
         fftPlotAxes;
         fftPlot;
@@ -19,6 +20,12 @@ classdef UPPEagleNarrowbandTest < ITestCase & AbstractTest
     end
     
     methods (Access = private)
+        function DispErrorCallStack(~, ex)
+            disp(ex.message)
+            for k=1:length(ex.stack)
+                ex.stack(k)
+            end
+        end
         function freqListboxCallback(self, hObject, ~)
             self.fmIdx = hObject.Value;
         end
@@ -40,10 +47,10 @@ classdef UPPEagleNarrowbandTest < ITestCase & AbstractTest
                 tm.TasksToExecute = self.measuringTime/self.measuringPeriod;
                 tm.Stopfcn = @(~,~) self.CollectData;
                 
-                fftSize = 512*2^self.fftMeas.fftSize;
-                fftBuffer = NET.createArray('System.Double', fftSize/2);
                 legend(self.fftPlotAxes,['Frequency: ' num2str(self.fm(self.fmIdx(self.measLoopIte))) 'Hz'])
-                self.fftMeas.StartMeasurement(self.measuringPeriod, fftBuffer, self.fftPlot,0)
+                
+                self.fftMeas.StartMeasurement(self.measuringPeriod);
+                
             else
                 self.deviceComm.Disconnect();
                 self.measLoopIte = 1;
@@ -132,7 +139,7 @@ classdef UPPEagleNarrowbandTest < ITestCase & AbstractTest
             self.fmIdx = self.listbox.Value;
             self.listbox.String = cellfun(@(c) num2str(c), num2cell(self.fm), 'UniformOutput', false);
             self.fftPlotAxes = findobj(self.fig,'tag','fftPlot');
-            self.fftPlot = semilogx(self.fftPlotAxes, 0, 0); xlim(self.fftPlotAxes, [0.1 100000]); ylim(self.fftPlotAxes, [-90 10]);
+            self.fftPlot = semilogx(self.fftPlotAxes, 0, 0); xlim(self.fftPlotAxes, [0.1 100000]); ylim(self.fftPlotAxes, [-90 10]);            
             self.timeEdit = findobj(self.fig,'tag','timeEdit');
             self.timeEdit.Callback = @self.timeEditCallback;
         end
@@ -148,13 +155,14 @@ classdef UPPEagleNarrowbandTest < ITestCase & AbstractTest
                 reset = true;
                 idQuery = true;
                 
-                upp = Upx(ser, idQuery, reset);
+                self.upp = Upx(ser, idQuery, reset);
                 enum = InstrumentDrivers.rsupvConstants;
-                upp.SetMeasurementMode(1);
-                upp.SetAnalyzerBandwidth(enum.AnalyzerBwidth22);
+                self.upp.SetMeasurementMode(1);
+                self.upp.SetAnalyzerBandwidth(enum.AnalyzerBwidth80);
                 
-                self.fftMeas = FFTMeasurement(upp);
-                fftSizeEnum = enum.AnalyzerFftSizeS16k;
+                self.fftMeas = FFTMeasurement(self.upp);
+                fftSizeEnum = enum.AnalyzerFftSizeS128k;
+%                 fftSizeEnum = enum.AnalyzerFftSizeS16k;
                 self.fftMeas.EnableLogging(true);
                 self.fftMeas.GetSetup();
                 
@@ -162,6 +170,7 @@ classdef UPPEagleNarrowbandTest < ITestCase & AbstractTest
                 self.fftMeas.window = enum.AnalyzerFftWindBlac;
                 self.fftMeas.postMeasFunction = @self.UpdateTime;
                 self.fftMeas.SetSetup();
+                self.fftMeas.SetFFTGraphicsHandle(self.fftPlot)
                 
                 self.RegisterEventListeners;
                 self.deviceComm.Connect;
@@ -179,7 +188,7 @@ classdef UPPEagleNarrowbandTest < ITestCase & AbstractTest
                     self.notifyEvent.NotifySetupDone;
                 end
             catch ex
-                disp(ex.message)
+                self.DispErrorCallStack(ex)
             end 
         end
         
@@ -190,7 +199,7 @@ classdef UPPEagleNarrowbandTest < ITestCase & AbstractTest
                 disp(char(ST(1).name))
                 self.StartStopMeasurement;
             catch ex
-                disp(ex.message)
+                self.DispErrorCallStack(ex)
             end
         end
         
@@ -216,31 +225,8 @@ classdef UPPEagleNarrowbandTest < ITestCase & AbstractTest
                 dataMeanX = mean(self.dataLog{i}{2},2);
                 dataMeanY = mean(self.dataLog{i}{3},2);
                 
-                EnableSmoothing = false;
-                if(EnableSmoothing)
-                    
-                    res = 1/4;
-                    
-                    % increase the number of datapoints so when the slopes of the
-                    x = dataMeanX(1):abs(dataMeanX(1)-dataMeanX(2))*res:dataMeanX(end);
-                    y = interp1(dataMeanX,dataMeanY, x);
-                    
-                    dataMeanX = x';
-                    dataMeanY = y';
-                    
-                    span = ceil(self.fm(i)/100/res); % span should be odd
-                    if rem(span,2) == 0     % if not odd, add 1
-                        span = span + 1;
-                    end
-                    
-                    dataMeanYa = smooth(dataMeanY,span);
-                    dataMeanYb = dataMeanY;
-                    dataMeanYb(end:-1:1) = smooth(dataMeanY(end:-1:1), span);
-                    
-                    dataMeanY = mean([dataMeanYa dataMeanYb],2);
-                end
                 
-                [tf, chList, figList(end + 1)] = NarrowbandNoiseTest(fm, dataMeanX, dataMeanY, 'off'); %% 'off' idicates that the assosicated figures are not visible at the time of creation
+                [tf, chList, figList(end + 1)] = NarrowbandNoiseTest(fm, dataMeanX, dataMeanY, 'on'); %% 'off' idicates that the assosicated figures are not visible at the time of creation
                 
                 tfList = [tfList tf];
                 
@@ -276,6 +262,8 @@ classdef UPPEagleNarrowbandTest < ITestCase & AbstractTest
             delete(self.fftMeas);
             
             self.UnregisterEventListeners;
+            self.upp.Dispose;
+            
             if(~isempty(self.notifyEvent))
                 self.notifyEvent.NotifyTeardownDone;
             end

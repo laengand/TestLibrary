@@ -1,5 +1,8 @@
 classdef FFTMeasurement < Measurement
         
+    properties(Access = private)
+        fftMeasIdx;
+    end
     properties(Access = public)
         delayRefChannel;
         filter1;
@@ -25,14 +28,14 @@ classdef FFTMeasurement < Measurement
     methods
         function self = FFTMeasurement(upx)
             self = self@Measurement(upx);
-            self.subsystem = self.enum.DispSubsysFft;
-            self.isTraceData = true;
             self.tm.Name = [mfilename 'Timer']; 
+            self.fftMeasIdx = self.AddTraceMeasurement(self.enum.DispSubsysFft, 1, [self.enum.DataSetAx self.enum.DataSetAy], 0, [], true);
         end
         
         function GetSetup(self)
             % GetSetup
             % Gets the current FFT Setup in the Analyzer Function window
+            self.GetSetup@Measurement;
             self.upx.SetAnalyzerFunction(self.enum.AnalyzerFuncFft);
             [~, self.delayRefChannel] = self.upx.GetAnalyzerFFTDelayCh1;
             [~, self.filter1] = self.upx.GetAnalyzerFilter(1);
@@ -52,6 +55,7 @@ classdef FFTMeasurement < Measurement
         function SetSetup(self)
             % SetSetup
             % Sets the FFT Setup in the Analyzer Function window
+            self.SetSetup@Measurement;
             self.upx.SetAnalyzerFunction(self.enum.AnalyzerFuncFft);
             self.upx.SetAnalyzerFFTDelayCh1(self.delayRefChannel);
             self.upx.SetAnalyzerFilter(1, self.filter1);
@@ -60,6 +64,8 @@ classdef FFTMeasurement < Measurement
             self.upx.SetAnalyzerFFTEqualizerFile(self.equalizerFile);
             self.upx.SetAnalyzerFFTFrequencyLimitState(self.freqLimit);
             self.upx.SetAnalyzerFFTSize(self.fftSize);
+            self.SetTraceBuffer(self.fftMeasIdx, (512*2^self.fftSize)/2)
+            
             self.upx.SetAnalyzerFFTWindow(self.window);
             self.upx.SetAnalyzerFFTAvgMode(self.avgMode);
             if(self.avgMode ~= self.enum.AnalyzerFftAverModeOff)
@@ -70,6 +76,19 @@ classdef FFTMeasurement < Measurement
             self.upx.SetAnalyzerMeasurementTime(self.freqPhaseMeasTime);
             
         end
+        
+        function [traceLogX, traceLogY] = GetTraceLog(self)
+            [traceLogX, traceLogY] = self.GetTraceLog@Measurement(self.fftMeasIdx);
+        end
+        
+        function SetFFTGraphicsHandle(self, graphicsHandle)
+            self.SetTraceGraphicsHandle(self.fftMeasIdx, graphicsHandle);
+        end
+        
+        function tm = GetTimer(self)
+            tm = self.tm;
+        end
+        
     end
     
 end
