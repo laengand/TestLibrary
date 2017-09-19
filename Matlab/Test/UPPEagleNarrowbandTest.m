@@ -107,7 +107,8 @@ classdef UPPEagleNarrowbandTest < ITestCase & AbstractTest
             %% Set the PID
             hexId = '0012'; % Replace this with the desired PID
             id = hex2dec(hexId);
-            pidFolderPath = 'C:\Users\laad\Documents\Visual Studio 2015\Projects\FirmwareTestTool\PC\code\Output\Debug\Command Definitions';
+            %pidFolderPath = 'C:\Users\laad\Documents\Visual Studio 2015\Projects\FirmwareTestTool\PC\code\Output\Debug\Command Definitions';
+            pidFolderPath = 'C:\Users\Fyn_ivg\Desktop\Testtool\Command Definitions';            
             pidFilePath = [pidFolderPath '\USB, PID ' hexId '.txt'];
             
             %% Create Communication generator class
@@ -296,7 +297,7 @@ classdef UPPEagleNarrowbandTest < ITestCase & AbstractTest
             self.memoryTransferComplete = false;
             folder = fileparts(mfilename('fullpath'));
             
-            fileName = [folder '\..\..\..\EagleTest\DSP.ldr'];
+            fileName = [folder '\..\..\..\EagleTests\DSP.ldr'];
             
             deviceComm.SetRealTimeEventReceiver(hex2dec('6F04'), fileName, 4096);
             s = dir(fileName);

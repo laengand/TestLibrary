@@ -10,7 +10,7 @@ if(~exist('Upx', 'file'))
 end
 
 %% Create an instance of the Upx class
-ser = '120003'; % refer to the backplate of the individual device.
+ser = '120082'; % refer to the backplate of the individual device.
 reset = true;
 idQuery = true;
 
@@ -60,6 +60,7 @@ meas.GetSetup();
 
 bandwidthEnum = int32(log2(sampleRate/48000));
 upp.SetAnalyzerBandwidth(bandwidthEnum);
+
 
 fftSize = double(512*2^fftSizeEnum);
 

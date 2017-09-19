@@ -26,9 +26,9 @@ function [testCollection] = DeviceTestCollection1(notifyEvent)
     % Set the PID
     hexId = '0012'; % Replace this with the desired PID
     id = hex2dec(hexId);
-    %pidFolderPath = 'C:\Users\Fyn_ivg\Desktop\Testtool\Command Definitions';
+    pidFolderPath = 'C:\Users\Fyn_ivg\Desktop\Testtool\Command Definitions';
     %pidFolderPath ='C:\sw\testtool_laad\Command Definitions';  % SSMSA path
-    pidFolderPath ='C:\Users\laad\Documents\Visual Studio 2015\Projects\FirmwareTestTool\PC\code\Output\Debug\Command Definitions';  % laad path
+    %pidFolderPath ='C:\Users\laad\Documents\Visual Studio 2015\Projects\FirmwareTestTool\PC\code\Output\Debug\Command Definitions';  % laad path
     
     pidFilePath = [pidFolderPath '\USB, PID ' hexId '.txt'];
     
@@ -38,7 +38,7 @@ function [testCollection] = DeviceTestCollection1(notifyEvent)
     % Get the instance of the generated class
     deviceComm = commGen.generatedCommunicator;
     
-    p = addpath([folder '\..\..\..\EagleTest\']);
+    p = addpath([folder '\..\..\..\EagleTests\']);
     addpath('..\');
     addpath([folder '\..\']);
     testCollection = Eagle_XTest(notifyEvent, deviceComm);

@@ -400,8 +400,10 @@ classdef Measurement < handle
         function StartMeasurement(self, period)
             
             self.tm.ExecutionMode = 'fixedRate';
+
             self.tm.Period = period;
             self.tm.TimerFcn = @self.TimerCallback;
+
             self.tm.BusyMode = 'queue';
             self.tm.UserData = self;
             self.upx.StartMeasurementWaitOPC(15000);
@@ -412,7 +414,7 @@ classdef Measurement < handle
             stop(self.tm);
             self.upx.MeasurementControl(self.enum.MeasStop);
         end
-               
+    
         function TimerCallback(self, ~, ~)
 %             tic
             for i = 1:length(self.traceMeasurementList)
@@ -475,6 +477,7 @@ classdef Measurement < handle
                         isgraphics(self.traceMeasurementList(i).graphicsHandle,'stem'))
                         self.traceMeasurementList(i).graphicsHandle.XData = x;
                         self.traceMeasurementList(i).graphicsHandle.YData = y;
+
                     end
                     
                 end

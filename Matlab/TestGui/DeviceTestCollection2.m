@@ -13,8 +13,8 @@ function [testCollection] = DeviceTestCollection2(notifyEvent)
     testCollection.Attach(Test8(notifyEvent))
     testCollection.Attach(Test9(notifyEvent))
     testCollection.Attach(UPPEagleNarrowbandTest(notifyEvent))
-    testCollection.Attach(UPPEagleNarrowbandTest(notifyEvent))
-    testCollection.Attach(UPPEagleNarrowbandTest(notifyEvent))
+    testCollection.Attach(UPPEaglePureToneTest(notifyEvent))
+    testCollection.Attach(UPPEagleWarbleTest(notifyEvent))
     testCollection.Attach(UPPEagleNarrowbandTest(notifyEvent))
     
 end
