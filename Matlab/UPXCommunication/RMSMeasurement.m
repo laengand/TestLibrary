@@ -11,16 +11,14 @@ classdef RMSMeasurement < Measurement
         fnctSettlingResolution;
         fnctSettlingTimeout;
         postFFT;
-        freqPhase;
-        freqPhaseMeasTime;
+        rmsMeasIdx;
     end
     
     methods
         function self = RMSMeasurement(upx)
             self = self@Measurement(upx);
-            self.isTraceData = false;
-            self.measurement = self.enum.MeasurementFunction;
             self.tm.Name = [mfilename 'Timer'];
+            self.rmsMeasIdx = self.AddNumericalMeasurement(1, self.enum.MeasurementFunction, [], true);
         end
         function GetSetup(self)
             % GetRMSSetup
@@ -42,10 +40,8 @@ classdef RMSMeasurement < Measurement
             end
             [~, self.postFFT] = self.upx.GetAnalyzerPostFFTState;
                         
-            [~, self.freqPhase] = self.upx.GetAnalyzerCombinedMeasurement;
-            [~, self.freqPhaseMeasTime] = self.upx.GetAnalyzerMeasurementTime;
-            
         end
+        
         function SetSetup(self)
             % SetRMSSetup
             % Sets the RMS Setup in the Analyzer Function window
@@ -66,10 +62,14 @@ classdef RMSMeasurement < Measurement
                 self.upx.SetMeasurementFunctionSettlingTimeout(self.fnctSettlingTimeout);
             end
             self.upx.SetAnalyzerPostFFTState(self.postFFT);
-                        
-            self.upx.SetAnalyzerCombinedMeasurement(self.freqPhase);
-            self.upx.SetAnalyzerMeasurementTime(self.freqPhaseMeasTime);
-            
+        end
+        
+        function SetRmsGraphicsHandle(self, graphicsHandle)
+            self.SetNumericalGraphicsHandle(self.rmsMeasIdx, graphicsHandle);
+        end
+        
+        function numLog = GetRmsNumLog(self)
+            numLog = self.numericalMeasurementList(self.rmsMeasIdx).log;
         end
     end
     

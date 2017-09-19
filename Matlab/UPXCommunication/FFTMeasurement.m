@@ -21,8 +21,7 @@ classdef FFTMeasurement < Measurement
         %         stop;
         %         resolution;
         %         measTime;
-        freqPhase;
-        freqPhaseMeasTime;
+
     end
     
     methods
@@ -48,8 +47,7 @@ classdef FFTMeasurement < Measurement
             [~, self.avgMode] = self.upx.GetAnalyzerFFTAvgMode;
             [~, self.avgCount] = self.upx.GetAnalyzerFFTAvgCount;
             [~, self.triggered] = self.upx.GetAnalyzerFFTTriggeredState;
-            [~, self.freqPhase] = self.upx.GetAnalyzerCombinedMeasurement;
-            [~, self.freqPhaseMeasTime] = self.upx.GetAnalyzerMeasurementTime;
+            
         end
         
         function SetSetup(self)
@@ -72,23 +70,21 @@ classdef FFTMeasurement < Measurement
                 self.upx.SetAnalyzerFFTAvgCount(self.avgCount);
             end
             self.upx.SetAnalyzerFFTTriggeredState(self.triggered);
-            self.upx.SetAnalyzerCombinedMeasurement(self.freqPhase);
-            self.upx.SetAnalyzerMeasurementTime(self.freqPhaseMeasTime);
-            
+
         end
         
-        function [traceLogX, traceLogY] = GetTraceLog(self)
-            [traceLogX, traceLogY] = self.GetTraceLog@Measurement(self.fftMeasIdx);
+        function [traceLogX, traceLogY] = GetFftTraceLog(self)
+            [traceLogX, traceLogY] = self.GetTraceLog(self.fftMeasIdx);
+        end
+        
+        function SetFFTPostMeasFunction(postMeasFunction)
+            self.SetTracePostMeasFunction(self, self.fftMeasIdx, postMeasFunction)
         end
         
         function SetFFTGraphicsHandle(self, graphicsHandle)
             self.SetTraceGraphicsHandle(self.fftMeasIdx, graphicsHandle);
         end
-        
-        function tm = GetTimer(self)
-            tm = self.tm;
-        end
-        
+              
     end
     
 end
