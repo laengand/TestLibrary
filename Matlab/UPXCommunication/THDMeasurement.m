@@ -82,7 +82,7 @@ classdef THDMeasurement < Measurement
                 self.upx.SetAnalyzerTHDFundamentalValue(self.fundamentalValue);
             end
             self.upx.SetAnalyzerRefinement(self.refinement);
-            self.upx.SetAnalyzerFFTEqualizer(self.equalizer);
+            self.upx.SetAnalyzerFFTEqualizer(logical(self.equalizer));
             self.upx.SetAnalyzerFFTEqualizerFile(self.equalizerFile);
             self.upx.SetMeasurementFunctionsSettling(self.fnctSettling);
             if (self.fnctSettling ~= self.enum.MeasFuncSettlingOff)

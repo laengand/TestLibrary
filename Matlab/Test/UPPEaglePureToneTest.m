@@ -9,7 +9,6 @@ classdef UPPEaglePureToneTest < ITestCase & UPPEagleBase
         fm = [125 160 200 250 315 400 500 630 750 800 1000 1250 1500 1600 2000 2500 3000 3150 4000 5000 6000 6300 8000 9000 10000 11200 12500 14000 16000];
         fmIdx = [];
         upp;
-%         fftMeas;
         
 %         f2h;
 %         fftSemilogx_H;
@@ -162,6 +161,10 @@ classdef UPPEaglePureToneTest < ITestCase & UPPEagleBase
                 self.thdMeas = THDMeasurement(self.upp);
                 self.thdMeas.GetSetup();
                 self.thdMeas.fundamental = InstrumentDrivers.rsupvConstants.AnalyzerThdFundVal;
+                self.thdMeas.measMode = InstrumentDrivers.rsupvConstants.AnalyzerThdMmodeSel;
+                self.thdMeas.harmonicState = [0 1 1 1 1 0 0 0 0];
+                self.thdMeas.refinement = 1;
+                self.thdMeas.equalizer = 0;
                 
                 self.notifyEvent.NotifySetupDone;
             catch ex
@@ -206,7 +209,7 @@ classdef UPPEaglePureToneTest < ITestCase & UPPEagleBase
 
                     period = single(fftSize)/48000;
                     tm = self.thdMeas.GetTimer();
-                    tm.StartDelay = 0.01;
+                    tm.StartDelay = 0.05;
                     self.thdMeas.StartMeasurement(period, [], [], self.outputTest);
                     self.thdMeas.postMeasFunction = @self.UpdateTime;
                 end
