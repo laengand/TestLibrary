@@ -476,11 +476,13 @@ classdef Measurement < handle
                         self.traceMeasurementList(i).logY(:, self.traceMeasIdx) = y';
                         self.traceMeasIdx = self.traceMeasIdx + 1;
                     end
-                    if(isgraphics(self.traceMeasurementList(i).graphicsHandle,'line') || ...
-                            isgraphics(self.traceMeasurementList(i).graphicsHandle, 'bar') || ...
-                            isgraphics(self.traceMeasurementList(i).graphicsHandle,'stem'))
-                        self.traceMeasurementList(i).graphicsHandle.XData = x;
-                        self.traceMeasurementList(i).graphicsHandle.YData = y;
+                    if ~isempty(self.traceMeasurementList(i).graphicsHandle)
+                        if(isgraphics(self.traceMeasurementList(i).graphicsHandle,'line') || ...
+                                isgraphics(self.traceMeasurementList(i).graphicsHandle, 'bar') || ...
+                                isgraphics(self.traceMeasurementList(i).graphicsHandle,'stem'))
+                            self.traceMeasurementList(i).graphicsHandle.XData = x;
+                            self.traceMeasurementList(i).graphicsHandle.YData = y;
+                        end
                     end
                     
                 end
