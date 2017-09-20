@@ -29,11 +29,6 @@ function [tf, chList, fig] = NarrowbandNoiseTest (fm, x, y, figureVisibleOption)
         x = x(~infTF);
         
         %% Compute bounds of cut-off frequencies
-        
-        [yMax , yMaxIdx] = max(y);
-        yMin = min(y);
-        
-%         fm = x(yMaxIdx); % Center frequency
         fcLowerMin = fm/2^(1/4); % Minimum value for the lower cut-off frequency
         fcLowerMax = fm/2^(1/6); % Maxmum value for the lower cut-off frequency
         fcUpperMin = fm*2^(1/6); % Minimum value for the upper cut-off frequency
@@ -41,68 +36,55 @@ function [tf, chList, fig] = NarrowbandNoiseTest (fm, x, y, figureVisibleOption)
         
         %% Test if fcLower and fcUpper is within the given bounaries
         
-%         span = ceil(fm/100/res); % span should be odd
-        numData = length(x);
-        span = ceil(numData/100); % span should be odd
-        if rem(span,2) == 0     % if not odd, add 1
-            span = span + 1;
-        end
-        % smooth the data set
-        xSmooth = x;
-        ySmoothA = smooth(y,span);
-        ySmoothB = y;
-        ySmoothB(end:-1:1) = smooth(y(end:-1:1), span);
-        
-        ySmooth = mean([ySmoothA ySmoothB],2);
-        
-        
-        [ySmoothMax, ySmoothMaxIdx] = max(ySmooth);
-        
-        fcLowerIdx = find(ySmoothMax - y(1:ySmoothMaxIdx-1)>= 3,1, 'last');
-        fcLower = xSmooth(fcLowerIdx);
-        fcUpperIdx = ySmoothMaxIdx + find(ySmoothMax - y(ySmoothMaxIdx+1:end) >= 3, 1, 'first');
-        fcUpper = xSmooth(fcUpperIdx);
-        
         fig = figure('Visible', figureVisibleOption);
         lineFft = semilogx(x,y);
         
         hold(lineFft.Parent,'on')
-        line(xSmooth, ySmooth, 'Color', 'black', 'LineWidth', 2);
-        title(['Single-Sided Amplitude Spectrum ' num2str(fm)])
+        
+        title(['Single-Sided Amplitude Spectrum ' num2str(fm) ' Hz'])
         xlabel('Hz')
         ylabel('dB')
+        numData = length(x(x > fcLowerMin & x < fcUpperMax));
+
+        % smoothing window width is 2^(1% of data points within the fc limits, fcLowerMin and fcUpperMax)
+        % no mathematical proof of why this is a good window size 
+        span = 2^ceil(numData*0.01); % span should be odd
+        if(span == 1)
+            span = 3;
+        elseif rem(span,2) == 0     % if not odd, add 1
+            span = span + 1;
+        end
         
-        resolution = numel(x);
+        % smooth the data set
+        y = smooth(y, span);
+%         y = smooth(y, 'sgolay');
         
-        lineFcLowerMinX = ones(resolution+1,1)*fcLowerMin;
-        lineFcLowerMinY = yMin:(yMax-yMin)/resolution:yMax;
-                
-        line(lineFcLowerMinX ,lineFcLowerMinY , 'Color', 'red');
+        % draw the smoothed line
+        line(x, y, 'Color', 'black', 'LineWidth', 2);
+        [yMax, yMaxIdx] = max(y);
+        yMin = min(y);
         
-        lineFcLowerMaxX = ones(resolution+1,1)*fcLowerMax;
-        lineFcLowerMaxY = yMin:(yMax-yMin)/resolution:yMax;
-        line(lineFcLowerMaxX, lineFcLowerMaxY, 'Color', 'red');
+        fcLowerIdx = find(yMax - y(1:yMaxIdx-1)>= 3,1, 'last');
+        fcLower = x(fcLowerIdx);
+        fcUpperIdx = yMaxIdx + find(yMax - y(yMaxIdx+1:end) >= 3, 1, 'first');
+        fcUpper = x(fcUpperIdx);
         
-        lineFcUpperMinX = ones(resolution+1,1)*fcUpperMin;
-        lineFcUpperMinY = yMin:(yMax-yMin)/resolution:yMax;
-        line(lineFcUpperMinX, lineFcUpperMinY, 'Color', 'red');
+        % draw the band limits
+        line([fcLowerMin fcLowerMin], [yMin yMax], 'Color', 'red');
+        line([fcLowerMax fcLowerMax], [yMin yMax], 'Color', 'red');
+        line([fcUpperMin fcUpperMin], [yMin yMax], 'Color', 'red');        
+        line([fcUpperMax fcUpperMax], [yMin yMax], 'Color', 'red');
         
-        lineFcUpperMaxX = ones(resolution+1,1)*fcUpperMax;
-        lineFcUpperMaxY = yMin:(yMax-yMin)/resolution:yMax;
-        line(lineFcUpperMaxX, lineFcUpperMaxY, 'Color', 'red');
-        
+        % draw the determined cut-off frequencies
         line([fcLower fcLower], [yMin,yMax], 'Color', 'black');
         text(fcLower, yMax, 'fc_{Lower}');
         
         line([fcUpper fcUpper], [yMin,yMax], 'Color', 'black');
         text(fcUpper, yMax, 'fc_{Upper}');
         
-        
-        
         if(fcLower >=fcLowerMin && fcLower <= fcLowerMax)
             chList.fcLowerValid = true;
         end
-        
         
         if(fcUpper >=fcUpperMin && fcUpper <= fcUpperMax)
             chList.fcUpperValid = true;
@@ -110,126 +92,64 @@ function [tf, chList, fig] = NarrowbandNoiseTest (fm, x, y, figureVisibleOption)
         
         
         %% Test if the slope is at least -12 dB pr.octave when outside the fc bounderies
-        [~,ILowerMin] = min(abs(fcLowerMin-x));
-        oc = 0:0.01:3;
+        [~,fcLowerMinIdx] = min(abs(fcLowerMin-x)); % find index of the data point which is closest to the lower cut-off frequency minimum limit
+                
+        oc = 3;
+        f1 = x(fcLowerMinIdx)/2^oc; % freq 3 octave lower
+        f2 = x(fcLowerMinIdx);
         
-        ocYLower = -12*oc+y(ILowerMin);
-        ocXLower = x(ILowerMin)./2.^oc;
+        y1 = -12*oc+y(fcLowerIdx);
+        y2 = y(fcLowerIdx);
         
-        [~,IUpperMax] = min(abs(fcUpperMax-x));
-        oc = 0:0.01:3;
+        ocXLowerIdx = (x >= f1) & (x <= f2);
+        ocXLower = x(ocXLowerIdx);
+        ocYLower = LogInterpolate(ocXLower, f1, f2, y1, y2);
+        ocYLowerData = y(ocXLowerIdx);
         
-        ocYUpper = -12*oc+y(IUpperMax);
-        ocXUpper = x(IUpperMax)*2.^oc;
-        
-        
-        lineOcLower = line(ocXLower , ocYLower , 'Color', 'blue');
-        lineOcUpper = line(ocXUpper, ocYUpper , 'Color', 'blue');
-        lineFft.Parent.XLim = [ocXLower(end) ocXUpper(end)];
-        
-        
-        % convert x-values to log scale inorder to make the octave curves
-        % linear. The slope of the octave curve can then easily be compared
-        % with the piecewise slopes of the fft curve
-        x = log10(x);
-        infTF = isinf(x);
-        y = y(~infTF);
-        x = x(~infTF);
-        
-        ocXLower = log10(ocXLower);
-        ocXUpper = log10(ocXUpper);
-        
-        slopeOcLower = (ocYLower(1) - ocYLower(end))/(ocXLower(1) - ocXLower(end));
-        ocLowerStartIdx = find(x <= ocXLower(end), 1, 'last');
-        if(isempty(ocLowerStartIdx))
-            ocLowerStartIdx = 1;
-        end
-        ocLowerEndIdx = ILowerMin;
-        
-        %     i = ocLowerStartIdx:ocLowerEndIdx;
-        
-        attempt = 1;
-        order = 10;
-        s = warning;
-        warning('off', 'MATLAB:polyfit:RepeatedPointsOrRescale')
-        
-        while(attempt < 10)
-            try
-                p = polyfit(x(ocLowerStartIdx:ocLowerEndIdx),y(ocLowerStartIdx:ocLowerEndIdx), order);
-                error(lastwarn);
-                break;
-            catch ex
-                lastwarn('');
-                order = order - 1;
-                attempt = attempt + 1;
-            end
-        end
-        warning(s);
-        
-        xp = x(ocLowerStartIdx):0.001:x(ocLowerEndIdx);
-        yp = polyval(p,xp);
-        i = 2:numel(xp);
-        %     slope = (y(i)- y(i-1))./(x(i)- x(i-1));
-        slope = (yp(i)- yp(i-1))./(xp(i)- xp(i-1));
-        
-        lowerSlopeValid = slope > slopeOcLower;
-        
-        if(all(lowerSlopeValid))
+        if(all(ocYLowerData <= ocYLower))
             chList.lowerSlopeValid = true;
         end
+        validPoints = ocYLowerData < ocYLower;
         
+        line(ocXLower(validPoints), ocYLowerData(validPoints), 'Color', 'green', 'LineWidth', 2);
+        line(ocXLower(~validPoints), ocYLowerData(~validPoints), 'Color', 'red', 'LineWidth', 2);
+
+        [~, fcUpperMaxIdx] = min(abs(fcUpperMax-x)); % find index of the data point which is closest to the upper cut-off frequency maximum limit
         
-        line(10.^xp(lowerSlopeValid), yp(lowerSlopeValid), 'Color', 'green', 'LineWidth', 2);
-        line(10.^xp(~lowerSlopeValid), yp(~lowerSlopeValid), 'Color', 'red', 'LineWidth', 2);
+        f1 = x(fcUpperMaxIdx);
+        f2 = x(fcUpperMaxIdx)*2^oc; % freq 3 octaves higher
         
+        y1 = y(fcUpperIdx);
+        y2 = -12*oc+y(fcUpperIdx);
         
-        slopeOcUpper = (ocYUpper(end) - ocYUpper(1))/(ocXUpper(end) - ocXUpper(1));
-        ocUpperStartIdx = IUpperMax;
-        ocUpperEndIdx = find(x >= ocXUpper(end), 1, 'first');
-        if(isempty(ocUpperEndIdx))
-            ocUpperEndIdx = length(x);
-        end
-        i=ocUpperStartIdx:ocUpperEndIdx;
+        ocXUpperIdx = (x >= f1) & (x <= f2); 
+        ocXUpper = x(ocXUpperIdx);
+        ocYUpper = LogInterpolate(ocXUpper, f1, f2, y1, y2);
+        ocYUpperData = y(ocXUpperIdx);
+        validPoints = ocYUpperData < ocYUpper;
         
-        attempt = 1;
-        order = 10;
-        s = warning;
-        warning('off', 'MATLAB:polyfit:RepeatedPointsOrRescale')
-        while(attempt < 10)
-            try
-                p = polyfit(x(ocUpperStartIdx:ocUpperEndIdx),y(ocUpperStartIdx:ocUpperEndIdx), order);
-                error(lastwarn);
-                break;
-            catch ex
-                lastwarn('');
-                order = order - 1;
-                attempt = attempt + 1;
-            end
-        end
-        warning(s);
-        xp = x(ocUpperStartIdx):0.001:x(ocUpperEndIdx);
-        yp = polyval(p,xp);
-        i = 2:numel(xp);
-        
-        %     slope = (y(i)- y(i-1))./(x(i)- x(i-1));
-        slope = (yp(i)- yp(i-1))./(xp(i)- xp(i-1));
-        upperSlopeValid = slope < slopeOcUpper;
-        if(all(upperSlopeValid))
+        line(ocXUpper(validPoints), ocYUpperData(validPoints), 'Color', 'green', 'LineWidth', 2);
+        line(ocXUpper(~validPoints), ocYUpperData(~validPoints), 'Color', 'red', 'LineWidth', 2);
+
+        if(all(y(ocXUpperIdx) <= ocYUpper))
             chList.upperSlopeValid = true;
         end
         
-        line(10.^xp(upperSlopeValid), yp(upperSlopeValid), 'Color', 'green', 'LineWidth', 2);
-        line(10.^xp(~upperSlopeValid) , yp(~upperSlopeValid), 'Color', 'red', 'LineWidth', 2);
+        line(ocXLower, ocYLower , 'Color', 'blue');
+        line(ocXUpper, ocYUpper , 'Color', 'blue');
+
+        %% Test that the amplitude is at least -35 dB relative to the amplitude of the center frequency       
+        line([x(find(x > 0, 1, 'first')) x(end)], [yMax yMax], 'Color', 'blue', 'LineWidth', 2);
+        line([x(find(x > 0, 1, 'first')) x(end)], [yMax-35 yMax-35], 'Color', 'blue', 'LineWidth', 2);
         
-        %% Test is the amplitude is at least -35 dB relative to the amplitude of the center frequency
-        line([10^x(1) 10^x(end)], [yMax yMax] , 'Color', 'blue', 'LineWidth', 2);
-        line([10^x(1) 10^x(end)], [yMax-35 yMax-35] , 'Color', 'blue', 'LineWidth', 2);
-        
-        if(all(y(1:ocLowerStartIdx) - yMax <= -35 ))
+        xIdx = x < x(fcLowerMinIdx)/2^oc; % indices of x with a frequency lower than 3 octaves
+                
+        if(all(y(xIdx) - yMax <= -35 ))
             chList.lowerLevel35dBValid = true;
         end
-        
-        if(all(y(ocUpperEndIdx:end) - yMax <= -35 ))
+
+        xIdx = x > x(fcUpperMaxIdx)*2^oc; % indices of x with a frequency higher than 3 octaves
+        if(all(y(xIdx) - yMax <= -35 ))
             chList.upperLevel35dBValid = true;
         end
         
@@ -245,6 +165,18 @@ function [tf, chList, fig] = NarrowbandNoiseTest (fm, x, y, figureVisibleOption)
             tf = true;
         end
     catch ex
-        ex
+       disp(ex.message)
+       for k=1:length(ex.stack)
+           ex.stack(k)
+       end
     end
+    
+end
+
+
+function y = LogInterpolate(f,f1,f2,y1,y2)
+    y = (log2(f/f1)/log2(f2/f1))*(y2-y1)+y1;
+end
+
+function [x, I] = find3dB(x,y)
 end

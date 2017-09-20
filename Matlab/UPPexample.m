@@ -1,6 +1,6 @@
-%% Example usage of an upp 
+%% Example usage of an upp
 % Sets up the generator to a sine with a given frequency and sets up the
-% analyzer to a fft and rms test
+% analyzer to perform several tests
 clear
 p = path;
 addpath('.\UPXCommunication\')
@@ -10,7 +10,7 @@ if(~exist('Upx', 'file'))
 end
 
 %% Create an instance of the Upx class
-ser = '120082'; % refer to the backplate of the individual device.
+ser = '120003'; % refer to the backplate of the individual device.
 reset = true;
 idQuery = true;
 
@@ -18,10 +18,16 @@ upp = Upx(ser, idQuery, reset);
 enum = InstrumentDrivers.rsupvConstants;
 
 %% Set the desired generator frequency and fft size
-rmsEnable = 1;
+rmsEnable = 0;
 
-genFrequency = 5000.0;
-fftSizeEnum = enum.AnalyzerFftSizeS1k;
+genFrequency = 1000.0;
+fftSizeEnum = enum.AnalyzerFftSizeS8k;
+
+sampleRate = 48000;
+% sampleRate = 96000;
+% sampleRate = 192000;
+
+tests = [1 0 0 0]; % FFT RMS Waveform THD
 
 %% Set the output of the generator to OFF in case it is ON
 [~, state] = upp.GetGeneratorOutputState;
@@ -43,102 +49,128 @@ upp.SetGeneratorOutputState(true);
 
 close all;
 
-%% Set measureing mode (0) single (1) continuous 
+%% Set measureing mode (0) single (1) continuous
 upp.SetMeasurementMode(1);
 
+
 %% FFT
-if(~rmsEnable)
-    fftMeas = FFTMeasurement(upp);
-    fftMeas.EnableLogging(true);
-    fftMeas.GetSetup();
+if(tests(1))
+    meas = FFTMeasurement(upp);
+    meas.GetSetup();
     
-    fftSize = 512*2^fftSizeEnum;
-    fftMeas.fftSize = fftSizeEnum;
-    fftMeas.SetSetup();
+    bandwidthEnum = int32(log2(sampleRate/48000));
+    upp.SetAnalyzerBandwidth(bandwidthEnum);
+    
+    fftSize = double(512*2^fftSizeEnum);
+    period = fftSize/sampleRate*1.5; % As it takes a while to transfer the data we cannot not only use the fft calculation time
+    figure
+    fftLineHandle = semilogx(0,0); ylim([-200 10]);
+    xlabel('Frequency [Hz]'); ylabel('Magnitude [dB]');
+    title(fftLineHandle.Parent, 'FFT')
+    meas.SetFFTGraphicsHandle(fftLineHandle);
+    
+    dim = [.2 .5 .3 .3];
+    frequencyTextbox = annotation('textbox', dim, 'FitBoxToText', 'on');
+    frequencyTextbox.UserData = 'Frequency: ';
+    ch = 1;
+    meas.FrequencyPhaseMeasurementEnable(false, ch, enum.AnalyzerFreqPhaseFreq, frequencyTextbox);
+    meas.FrequencyPhaseMeasurementEnable(true);
+    
+    dim = [.2 .40 .3 .3];
+    levelTextbox = annotation('textbox', dim, 'FitBoxToText', 'on');
+    levelTextbox.UserData = 'Rms: ';
+    meas.LevelMonitorEnable(false, ch, enum.AnalyzerLevMonRms, levelTextbox);
+    meas.LevelMonitorEnable(true);
+    
+    dim = [.2 .30 .3 .3];
+    inputTextbox = annotation('textbox', dim, 'FitBoxToText','on');
+    inputTextbox.UserData = 'Peak: ';
+    meas.InputMonitorEnable(false, ch, enum.AnalyzerInputMonIpea, inputTextbox)
+    meas.InputMonitorEnable(true);
+    
+    meas.SetFftParameters(fftSizeEnum, enum.AnalyzerFftWindBlac, enum.AnalyzerFftAverModeOff, 0)
+    meas.SetSetup();
+    
+    meas.StartMeasurement(period)   
+    pause(5)
+    meas.StopMeasurement;
+end
+%% RMS
+if(tests(2))
+    meas = RMSMeasurement(upp);
+    meas.GetSetup;
+    meas.SetSetup;
+    figure
+    dim = [0.0 .7 .3 .3];
+    rmsTextbox = annotation('textbox', dim, 'FitBoxToText', 'on');
+    rmsTextbox.UserData = 'Rms: ';
+    meas.SetRmsGraphicsHandle(rmsTextbox);
+    
+    period = 0.05;
+    meas.StartMeasurement(period);
+    pause(5)
+    meas.StopMeasurement;
+end
+%% Waveform
+if(tests(3))
+    meas = Measurement(upp);
+    meas.GetSetup;
+    period = 1;
+    meas.traceLength = period/10;
+    meas.SetSetup();
+    figure
+    wfLineHandle = plot(0, 0); xlabel('Time [s]'); ylabel('Voltage [V]');
+    title(wfLineHandle.Parent, 'Waveform')
+    meas.WaveformEnable(false, wfLineHandle);
+    meas.WaveformEnable(true);
+    
+    dim = [.2 .5 .3 .3];
+    frequencyTextbox = annotation('textbox', dim, 'FitBoxToText', 'on');
+    frequencyTextbox.UserData = 'Frequency: ';
+    ch = 1;
+    meas.FrequencyPhaseMeasurementEnable(false, ch, enum.AnalyzerFreqPhaseFreq, frequencyTextbox);
+    meas.FrequencyPhaseMeasurementEnable(true);
+    
+    dim = [.2 .40 .3 .3];
+    levelTextbox = annotation('textbox', dim, 'FitBoxToText', 'on');
+    levelTextbox.UserData = 'Rms: ';
+    meas.LevelMonitorEnable(false, ch, enum.AnalyzerLevMonRms, levelTextbox);
+    meas.LevelMonitorEnable(true);
+    
+    dim = [.2 .30 .3 .3];
+    inputTextbox = annotation('textbox', dim, 'FitBoxToText','on');
+    inputTextbox.UserData = 'Peak: ';
+    meas.InputMonitorEnable(false, ch, enum.AnalyzerInputMonIpea, inputTextbox)
+    meas.InputMonitorEnable(true);
+    
+    genFrequency = 100;
+    upp.SetGeneratorFrequency(channel, genFrequency, enum.UnitHz);
+    meas.StartMeasurement(period);
+    pause(5)
+    meas.StopMeasurement;
+    
+end
+%% THD
+if(tests(4))
+    meas = THDMeasurement(upp);
+    meas.GetSetup;
+    meas.SetSetup;
     
     figure
-    sb = subplot(1,2,1);
-    fftLineHandle = plot(0,0);
-    xlabel('Time [s]'); ylabel('Magnitude [dB]');
-    title(fftLineHandle .Parent, 'Waveform')
-
-    fftBuffer = NET.createArray('System.Double', fftSize/2);
-    period = 0.1;
-    fftMeas.StartMeasurement(period, fftBuffer, fftLineHandle,0)
+    barHandle = bar(0,0);
+    barHandle.BaseValue = -180;
+    meas.BarGraphEnable(false, barHandle);
+    meas.BarGraphEnable(true);
+    
+    dim = [0.0 .7 .3 .3];
+    thdTextbox = annotation('textbox', dim, 'FitBoxToText', 'on');
+    thdTextbox.UserData = 'THD: ';
+    meas.SetThdGraphicsHandle(thdTextbox);
+    period = 1;
+    meas.StartMeasurement(period);
+    pause(5)
+    meas.StopMeasurement;
 end
-
-%% Waveform 
-waveForm = WaveformMeasurement(upp);
-waveForm.GetSetup;
-waveForm.traceLength = 0.01;
-waveForm.SetSetup;
-waveForm.EnableLogging(true);
-sampleRate = 48000;
-
-sb = subplot(1,2,2);
-wfLineHandle = plot(sb,0,0); xlabel('Time [s]'); ylabel('Voltage [V]');
-title(wfLineHandle.Parent, 'Waveform')
-
-hold on
-
-rmsLine = line([0 waveForm.traceLength], [0 0], 'Color', 'r');
-
-hold off
-
-anno = legend(rmsLine, 'show');
-waveFormBuffer = NET.createArray('System.Double', sampleRate*waveForm.traceLength);
-period = 0.1;
-waveForm.StartMeasurement(period, waveFormBuffer, wfLineHandle, 0);
-
-%% RMS
-if(rmsEnable)
-    sb = subplot(1,2,1);
-    rmsBarHandle = bar(0); ylabel('Voltage [V]');
-    title(rmsBarHandle.Parent, 'RMS')
-    rmsMeas = RMSMeasurement(upp);
-    rmsMeas.GetSetup;
-    rmsMeas.channel = 1;
-    rmsMeas.SetSetup;
-        
-    rmsMeas.StartMeasurement(period, 0, rmsBarHandle, 0);
-end
-
-%% Monitor
-
-monitor = Monitor(upp);
-monitor.GetSetup;
-monitor.levelMonitor = enum.AnalyzerLevMonRms;
-monitor.channel = 1;
-monitor.SetSetup;
-
-monitor.StartMeasurement(period, 0, rmsLine, anno);
-% monitor.
-%% Enable output a measuring mode
-% Set the output of the generator to ON
-upp.SetGeneratorOutputState(true);
-
-	
-%% Initiate the measurement and read the result. 
-% upp.StartMeasurementWaitOPC(15000);
-fftSize = 512*2^fftSizeEnum;
-
-%% Make some measurements
-pause;
-
-%% Stop the measurement and clean up
-if(rmsEnable)
-    rmsMeas.StopMeasurement;
-    delete(rmsMeas)
-else
-    fftMeas.StopMeasurement;
-    delete(fftMeas)
-end
-waveForm.StopMeasurement;
-monitor.StopMeasurement
-delete(waveForm)
-delete(monitor)
-
-pause(2)
 %% Disconnect from the upp
 upp.Dispose
 
