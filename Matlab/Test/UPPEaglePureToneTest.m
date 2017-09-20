@@ -107,7 +107,8 @@ classdef UPPEaglePureToneTest < ITestCase & UPPEagleBase
                 self.ReadyToUse;
                 self.InitInstrument;
                 
-                ser = '120082'; % refer to the backplate of the individual device.
+%                 ser = '120082'; % refer to the backplate of the individual device.
+                ser = '120003'; % refer to the backplate of the individual device.
                 reset = false;
                 idQuery = true;
 
@@ -207,8 +208,10 @@ classdef UPPEaglePureToneTest < ITestCase & UPPEagleBase
                     period = single(fftSize)/48000;
                     tm = self.thdMeas.GetTimer();
                     tm.StartDelay = 0.01;
-                    self.thdMeas.StartMeasurement(period, [], [], self.outputTest);
-                    self.thdMeas.postMeasFunction = @self.UpdateTime;
+                    self.thdMeas.SetThdPostMeasFunction(@self.UpdateTime);
+                    self.thdMeas.SetThdGraphicsHandle(self.outputTest);
+                    self.thdMeas.StartMeasurement(period);
+                    
                 end
             catch ex
                 disp(ex.message)
@@ -227,6 +230,8 @@ classdef UPPEaglePureToneTest < ITestCase & UPPEagleBase
         function Teardown(self)
             ST = dbstack('-completenames');
             disp(char(ST(1).name))
+            
+            self.deviceComm.Disconnect();
             
             delete(self.thdMeas);
             self.UnregisterEventListeners;
@@ -256,7 +261,7 @@ classdef UPPEaglePureToneTest < ITestCase & UPPEagleBase
         end
         
         %%
-        function UpdateTime(self, obj)
+        function UpdateTime(self, x, y)
             self.thdMeas.StopMeasurement;
             
             freq = self.fm(self.fmIdx(self.subMeasIdx));
@@ -268,7 +273,7 @@ classdef UPPEaglePureToneTest < ITestCase & UPPEagleBase
                 fftSizeEnum = InstrumentDrivers.rsupvConstants.AnalyzerFftSizeS4k;
                 fftSize = 512*2^fftSizeEnum;
                 period = single(fftSize)/48000;
-                self.thdMeas.StartMeasurement(period, [], [], self.outputTest);
+                self.thdMeas.StartMeasurement(period);
             end
         end
         

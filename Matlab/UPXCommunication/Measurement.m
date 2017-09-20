@@ -6,6 +6,27 @@ classdef Measurement < handle
         numericalMeasIdx = 1;
         traceMeasIdx = 1;
         
+        % Frequency/Phase
+        freqPhase;
+        freqPhaseMeasTime;
+        
+        % Monitor
+        levelMonitor;
+        inputMonitor;
+        
+        % Waveform
+        waveform;
+        measMode;
+        traceLength;
+        triggerChannel;
+        triggerSource;
+        triggerLevel;
+        triggerSlope;
+        pretrigger;
+        autoTrigger;
+        
+        % BarGraph
+        barGraph;
     end
     
     properties(Access = protected)
@@ -60,27 +81,7 @@ classdef Measurement < handle
             'postMeasFunction', []);
     end
     properties(Access = public)
-        % Frequency/Phase
-        freqPhase;
-        freqPhaseMeasTime;
-        
-        % Monitor
-        levelMonitor;
-        inputMonitor;
-        
-        % Waveform
-        waveform;
-        measMode;
-        traceLength;
-        triggerChannel;
-        triggerSource;
-        triggerLevel;
-        triggerSlope;
-        pretrigger;
-        autoTrigger;
-        
-        % BarGraph
-        barGraph;
+
     end
     
     methods(Access = protected)
@@ -105,7 +106,7 @@ classdef Measurement < handle
         function SetNumericalGraphicsHandle(self, idx, graphicsHandle)
             self.numericalMeasurementList(idx).graphicsHandle = graphicsHandle;
         end
-                
+        
         function SetNumericalEnable(self, idx, enable)
             self.numericalMeasurementList(idx).enable = enable;
         end
@@ -156,7 +157,7 @@ classdef Measurement < handle
         function numLog = GetNumLog(self, idx)
             numLog = self.numericalMeasurementList(idx).log;
         end
-                
+        
     end
     methods
         %% Get Setup
@@ -254,7 +255,7 @@ classdef Measurement < handle
         end
         
         function SetSetup(self)
-%             self.upx.SetAnalyzerFunction(self.enum.AnalyzerFuncOff);
+            %             self.upx.SetAnalyzerFunction(self.enum.AnalyzerFuncOff);
             self.SetFrequencyPhaseSetup(self.freqPhase, self.freqPhaseMeasTime)
             self.SetMonitorSetup(self.levelMonitor, self.inputMonitor)
             self.SetWaveformSetup(self.waveform, ...
@@ -323,8 +324,10 @@ classdef Measurement < handle
         end
         
         %% BarGraph
-        function BarGraphEnable(self, enable, graphicsHandle)   
-            self.traceMeasurementList(self.barGraphMeasListIdx).graphicsHandle = graphicsHandle;
+        function BarGraphEnable(self, enable, graphicsHandle)
+            if nargin > 2;
+                self.traceMeasurementList(self.barGraphMeasListIdx).graphicsHandle = graphicsHandle;
+            end
             self.traceMeasurementList(self.barGraphMeasListIdx).enable = enable;
             self.SetBarGraphSetup(enable)
         end
@@ -392,7 +395,7 @@ classdef Measurement < handle
             countXLog = self.traceMeasurementList(self.waveformMeasListIdx).countX;
             countYLog = self.traceMeasurementList(self.waveformMeasListIdx).countY;
         end
-
+        
         function tm = GetTimer(self)
             tm = self.tm;
         end
@@ -400,10 +403,10 @@ classdef Measurement < handle
         function StartMeasurement(self, period)
             
             self.tm.ExecutionMode = 'fixedRate';
-
+            
             self.tm.Period = period;
             self.tm.TimerFcn = @self.TimerCallback;
-
+            
             self.tm.BusyMode = 'queue';
             self.tm.UserData = self;
             self.upx.StartMeasurementWaitOPC(15000);
@@ -414,9 +417,9 @@ classdef Measurement < handle
             stop(self.tm);
             self.upx.MeasurementControl(self.enum.MeasStop);
         end
-    
+        
         function TimerCallback(self, ~, ~)
-%             tic
+            %             tic
             for i = 1:length(self.traceMeasurementList)
                 if(self.traceMeasurementList(i).enable)
                     
@@ -448,7 +451,7 @@ classdef Measurement < handle
                     if statusX ~= 0 || all(x == 0)
                         warning(['Trace x measurement error: ' num2str(statusX)])
                     end
-                                        
+                    
                     % Read the trace data of y
                     statusY = self.upx.ReadTraceDataSets( ...
                         self.traceMeasurementList(i).subsystem, ...
@@ -474,10 +477,10 @@ classdef Measurement < handle
                         self.traceMeasIdx = self.traceMeasIdx + 1;
                     end
                     if(isgraphics(self.traceMeasurementList(i).graphicsHandle,'line') || ...
-                        isgraphics(self.traceMeasurementList(i).graphicsHandle,'stem'))
+                            isgraphics(self.traceMeasurementList(i).graphicsHandle, 'bar') || ...
+                            isgraphics(self.traceMeasurementList(i).graphicsHandle,'stem'))
                         self.traceMeasurementList(i).graphicsHandle.XData = x;
                         self.traceMeasurementList(i).graphicsHandle.YData = y;
-
                     end
                     
                 end
@@ -514,7 +517,7 @@ classdef Measurement < handle
                     
                 end
             end
-%             toc
+            %             toc
         end
     end
 end

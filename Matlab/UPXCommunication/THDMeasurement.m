@@ -1,14 +1,20 @@
 classdef THDMeasurement < Measurement
+    properties(Access = private) 
+        thdMeasIdx;
+        channel;
+    end
     
-    properties(Access = public) 
-        measMode;
+    properties(Access = public) % should be private and assigned through functions
+        thdMeasMode;
         harmonicState;
         fundamental
         fundamentalValue;
         refinement;
         equalizer;
         equalizerFile;
+        
         limitEnable;
+        
         fnctSettling;
         fnctSettlingSamples;
         fnctSettlingTolerance;
@@ -19,16 +25,15 @@ classdef THDMeasurement < Measurement
     methods
         function self = THDMeasurement(upx)
             self = self@Measurement(upx);
-            self.isTraceData = false;
-            self.measurement = self.enum.MeasurementFunction;
             self.tm.Name = [mfilename 'Timer'];
-            
             self.channel = 1;
+            self.thdMeasIdx = self.AddNumericalMeasurement(self.channel, self.enum.MeasurementFunction, [], true);
         end
         
         function GetSetup(self)
             self.upx.SetAnalyzerFunction(self.enum.AnalyzerFuncThd);
-            [~, self.measMode] = self.upx.GetAnalyzerTHDMeasMode;
+            self.GetSetup@Measurement;
+            [~, self.thdMeasMode] = self.upx.GetAnalyzerTHDMeasMode;
             [~, self.harmonicState(2)] = self.upx.GetAnalyzerTHDHarmonicState(2);
             [~, self.harmonicState(3)] = self.upx.GetAnalyzerTHDHarmonicState(3);
             [~, self.harmonicState(4)] = self.upx.GetAnalyzerTHDHarmonicState(4);
@@ -52,22 +57,16 @@ classdef THDMeasurement < Measurement
                        
             
             %[~, self.refinement] = self.upx.GetAnalyzerRefinement;
-%             [~, self.refinement] = self.upx.GetAnalyzerRefinement;
-%             [~, self.refinement] = self.upx.GetAnalyzerRefinement;
-%             [~, self.refinement] = self.upx.GetAnalyzerRefinement;
-%             [~, self.refinement] = self.upx.GetAnalyzerRefinement;
-%             [~, self.refinement] = self.upx.GetAnalyzerRefinement;
-%             [~, self.refinement] = self.upx.GetAnalyzerRefinement;
-%             [~, self.refinement] = self.upx.GetAnalyzerRefinement;
-%             [~, self.refinement] = self.upx.GetAnalyzerRefinement;
+
         end
         function SetSetup(self)
-            self.upx.SetGeneratorChannelMode(0);    % RSUPV_GEN_CH_OFF (0) - Off
+            self.SetSetup@Measurement;
+%             self.upx.SetGeneratorChannelMode(0);    % RSUPV_GEN_CH_OFF (0) - Off
             
             self.upx.SetAnalyzerFunction(self.enum.AnalyzerFuncThd);
-            self.upx.SetAnalyzerTHDMeasMode(self.measMode);
+            self.upx.SetAnalyzerTHDMeasMode(self.thdMeasMode);
             
-            if (self.measMode == self.enum.AnalyzerThdMmodeSel)
+            if (self.thdMeasMode == self.enum.AnalyzerThdMmodeSel)
                 self.upx.SetAnalyzerTHDHarmonicState(2, logical(self.harmonicState(2)));
                 self.upx.SetAnalyzerTHDHarmonicState(3, logical(self.harmonicState(3)));
                 self.upx.SetAnalyzerTHDHarmonicState(4, logical(self.harmonicState(4)));
@@ -91,9 +90,14 @@ classdef THDMeasurement < Measurement
                 self.upx.SetMeasurementFunctionSettlingResolution(self.fnctSettlingResolution);
                 self.upx.SetMeasurementFunctionSettlingTimeout(self.fnctSettlingTimeout);
             end
-            
-            %self.upx.SetAnalyzerPostFFTState(self.postFFT);
-            
+        end
+        
+        function SetThdPostMeasFunction(self, postMeasFunction)
+            self.SetNumericalPostMeasFunction(self.thdMeasIdx, postMeasFunction);
+        end
+                
+        function SetThdGraphicsHandle(self, graphicsHandle)
+            self.SetNumericalGraphicsHandle(self.thdMeasIdx, graphicsHandle);
         end
     end
     

@@ -1,8 +1,10 @@
 classdef RMSMeasurement < Measurement
     
     properties(Access = private) 
-        snSequence;
+        
+        snSequence; % not sure if this variable and the next is related
         measTime;
+        
         filter1;
         filter2;
         fnctSettling;
@@ -10,7 +12,7 @@ classdef RMSMeasurement < Measurement
         fnctSettlingTolerance;
         fnctSettlingResolution;
         fnctSettlingTimeout;
-        postFFT;
+        
         rmsMeasIdx;
     end
     
@@ -20,10 +22,24 @@ classdef RMSMeasurement < Measurement
             self.tm.Name = [mfilename 'Timer'];
             self.rmsMeasIdx = self.AddNumericalMeasurement(1, self.enum.MeasurementFunction, [], true);
         end
+        
+        function SetFilters(self, filter1, filter2)
+            self.filter1 = filter1;
+            self.filter2 = filter2;
+        end
+        
+        function SetFunctionSettling(self, fnctSettling, samples, tolerance, resolution, timeout)
+            self.fnctSettling = fnctSettling;
+            self.fnctSettlingSamples = samples;
+            self.fnctSettlingTolerance = tolerance;
+            self.fnctSettlingResolution = resolution;
+            self.fnctSettlingTimeout = timeout;
+        end
+        
         function GetSetup(self)
-            % GetRMSSetup
+            % GetSetup
             % Gets the current RMS Setup in the Analyzer Function window
-            
+            self.GetSetup@Measurement;
             [~, self.snSequence] = self.upx.GetAnalyzerSNSequenceState;
             if(self.snSequence)
                 [~, self.measTime] = self.upx.GetAnalyzerSNMeasTime;
@@ -38,15 +54,14 @@ classdef RMSMeasurement < Measurement
                 [~, self.fnctSettlingResolution] = self.upx.GetMeasurementFunctionSettlingResolution;
                 [~, self.fnctSettlingTimeout] = self.upx.GetMeasurementFunctionSettlingTimeout;
             end
-            [~, self.postFFT] = self.upx.GetAnalyzerPostFFTState;
-                        
+        
         end
         
         function SetSetup(self)
-            % SetRMSSetup
+            % SetSetup
             % Sets the RMS Setup in the Analyzer Function window
             self.upx.SetAnalyzerFunction(self.enum.AnalyzerFuncRms);
-            
+            self.SetSetup@Measurement;
             self.upx.SetAnalyzerSNSequenceState(self.snSequence);
             if(self.snSequence)
                 self.upx.SetAnalyzerSNMeasTime(self.measTime);
@@ -61,7 +76,6 @@ classdef RMSMeasurement < Measurement
                 self.upx.SetMeasurementFunctionSettlingResolution(self.fnctSettlingResolution);
                 self.upx.SetMeasurementFunctionSettlingTimeout(self.fnctSettlingTimeout);
             end
-            self.upx.SetAnalyzerPostFFTState(self.postFFT);
         end
         
         function SetRmsGraphicsHandle(self, graphicsHandle)

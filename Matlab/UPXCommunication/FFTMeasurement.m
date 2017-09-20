@@ -2,26 +2,22 @@ classdef FFTMeasurement < Measurement
         
     properties(Access = private)
         fftMeasIdx;
-    end
-    properties(Access = public)
-        delayRefChannel;
+        
         filter1;
         filter2;
-        equalizer;
-        equalizerFile;
-        freqLimit;
-        %         barGraph;
-        %         postFFT;
+        
         fftSize;
         window;
         avgMode;
         avgCount;
+    end
+    
+    properties(Access = public) % needs to be assigned in separate functions instead of being public
+        delayRefChannel;
+        equalizer;
+        equalizerFile;
+        freqLimit;
         triggered;
-        %         start;
-        %         stop;
-        %         resolution;
-        %         measTime;
-
     end
     
     methods
@@ -29,6 +25,18 @@ classdef FFTMeasurement < Measurement
             self = self@Measurement(upx);
             self.tm.Name = [mfilename 'Timer']; 
             self.fftMeasIdx = self.AddTraceMeasurement(self.enum.DispSubsysFft, 1, [self.enum.DataSetAx self.enum.DataSetAy], 0, [], true);
+        end
+        
+        function SetFilters(self, filter1, filter2)
+            self.filter1 = filter1;
+            self.filter2 = filter2;
+        end
+        
+        function SetFftParameters(self, size, window, avgMode, avgCount)
+            self.fftSize = size;
+            self.window = window;
+            self.avgMode = avgMode;
+            self.avgCount = avgCount;
         end
         
         function GetSetup(self)
@@ -77,8 +85,8 @@ classdef FFTMeasurement < Measurement
             [traceLogX, traceLogY] = self.GetTraceLog(self.fftMeasIdx);
         end
         
-        function SetFFTPostMeasFunction(postMeasFunction)
-            self.SetTracePostMeasFunction(self, self.fftMeasIdx, postMeasFunction)
+        function SetFFTPostMeasFunction(self, postMeasFunction)
+            self.SetTracePostMeasFunction(self.fftMeasIdx, postMeasFunction)
         end
         
         function SetFFTGraphicsHandle(self, graphicsHandle)
