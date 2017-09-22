@@ -423,7 +423,11 @@ classdef Measurement < handle
             for i = 1:length(self.traceMeasurementList)
                 if(self.traceMeasurementList(i).enable)
                     
-                    % Check if there is enough data to fill the buffer
+                    % Check if there is enough data to fill the buffer. 
+                    % Yes it is annoying that we have to wait for the upx
+                    % to be ready with data, but if we don't wait we might
+                    % get corrupted data
+                    
                     countX = 0;
                     countY = 0;
                     
@@ -500,18 +504,19 @@ classdef Measurement < handle
                         self.numericalMeasurementList(i).postMeasFunction(measurementResult, units)
                     end
                     
-                    if(isgraphics(self.numericalMeasurementList(i).graphicsHandle, 'line') )
-                        self.lineHandle.YData = [measurementResult measurementResult];
-                        
-                    elseif(isgraphics(self.numericalMeasurementList(i).graphicsHandle, 'bar') )
-                        self.lineHandle.YData = measurementResult;
-                        
-                    elseif(isgraphics(self.numericalMeasurementList(i).graphicsHandle, 'legend') || ...
-                            isgraphics(self.numericalMeasurementList(i).graphicsHandle, 'uicontrol') || ...
-                            isgraphics(self.numericalMeasurementList(i).graphicsHandle, 'textboxshape'))
-                        self.numericalMeasurementList(i).graphicsHandle.String = [self.numericalMeasurementList(i).graphicsHandle.UserData num2str(measurementResult) ' ' units];
+                    if ~isempty(self.numericalMeasurementList(i).graphicsHandle)    
+                        if(isgraphics(self.numericalMeasurementList(i).graphicsHandle, 'line') )
+                            self.lineHandle.YData = [measurementResult measurementResult];
+                            
+                        elseif(isgraphics(self.numericalMeasurementList(i).graphicsHandle, 'bar') )
+                            self.lineHandle.YData = measurementResult;
+                            
+                        elseif(isgraphics(self.numericalMeasurementList(i).graphicsHandle, 'legend') || ...
+                                isgraphics(self.numericalMeasurementList(i).graphicsHandle, 'uicontrol') || ...
+                                isgraphics(self.numericalMeasurementList(i).graphicsHandle, 'textboxshape'))
+                            self.numericalMeasurementList(i).graphicsHandle.String = [self.numericalMeasurementList(i).graphicsHandle.UserData num2str(measurementResult) ' ' units];
+                        end
                     end
-                    
                     if(self.enableLogging)
                         self.numericalMeasurementList(i).log{end + 1, 1} = measurementResult;
                         self.numericalMeasurementList(i).log{end, 2} = units;
