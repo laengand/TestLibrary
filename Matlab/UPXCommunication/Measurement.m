@@ -304,9 +304,10 @@ classdef Measurement < handle
         end
         
         %% Waveform
-        function WaveformEnable(self, enable, graphicsHandle)
+        function WaveformEnable(self, enable, graphicsHandle, postMeasFunction)
             if nargin > 2;
                 self.traceMeasurementList(self.waveformMeasListIdx).graphicsHandle = graphicsHandle;
+                self.traceMeasurementList(self.waveformMeasListIdx).postMeasFunction = postMeasFunction;
             end
             self.waveform = enable;
             
@@ -369,7 +370,7 @@ classdef Measurement < handle
         end
         
         function numLog = GetFrequencyNumLog(self)
-            numLog = self.numericalMeasurementList(self.levelMonitorMeasListIdx).log;
+            numLog = self.numericalMeasurementList(self.frequencyMeasListIdx).log;
         end
         
         function numLog = GetLevelMonitorNumLog(self)

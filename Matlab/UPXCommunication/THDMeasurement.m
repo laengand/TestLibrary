@@ -99,6 +99,10 @@ classdef THDMeasurement < Measurement
         function SetThdGraphicsHandle(self, graphicsHandle)
             self.SetNumericalGraphicsHandle(self.thdMeasIdx, graphicsHandle);
         end
+        
+        function numLog = GetTHDNumLog(self)
+            numLog = self.GetNumLog(self.thdMeasIdx);
+        end
     end
     
 end
