@@ -205,7 +205,9 @@ classdef Measurement < handle
         %% Set Setup
         function SetFrequencyPhaseSetup(self, freqPhase, freqPhaseMeasTime)
             self.upx.SetAnalyzerCombinedMeasurement(freqPhase);
-            self.upx.SetAnalyzerMeasurementTime(freqPhaseMeasTime);
+            if(freqPhase == self.enum.AnalyzerFreqPhaseFreq)
+                self.upx.SetAnalyzerMeasurementTime(freqPhaseMeasTime);
+            end
         end
         
         function SetMonitorSetup(self, levelMonitor, inputMonitor)
@@ -273,6 +275,7 @@ classdef Measurement < handle
         %% Frequency Phase Measurement
         function FrequencyPhaseMeasurementEnable(self, enable, channel, combinedMeasurement, graphicsHandle)
             if nargin > 2;
+                self.freqPhase = combinedMeasurement;
                 self.upx.SetAnalyzerCombinedMeasurement(combinedMeasurement);
                 self.numericalMeasurementList(self.frequencyMeasListIdx).channel = channel;
                 self.numericalMeasurementList(self.frequencyMeasListIdx).graphicsHandle = graphicsHandle;
@@ -283,6 +286,7 @@ classdef Measurement < handle
         %% Level Monitor
         function LevelMonitorEnable(self, enable, channel, levelMonitor, graphicsHandle)
             if nargin > 2;
+                self.levelMonitor = levelMonitor;
                 self.upx.SetAnalyzerLevelMonitor(levelMonitor);
                 self.levelMonitor = levelMonitor;
                 self.numericalMeasurementList(self.levelMonitorMeasListIdx).channel = channel;
@@ -337,7 +341,7 @@ classdef Measurement < handle
             self.upx = upx;
             self.enum = InstrumentDrivers.rsupvConstants;
             self.tm = timer;
-            
+            self.tm.TimerFcn = @self.TimerCallback;
             self.functionMeasListIdx        = self.AddNumericalMeasurement(1, self.enum.MeasurementFunction, [], false);
             self.levelMonitorMeasListIdx    = self.AddNumericalMeasurement(1, self.enum.MeasurementLevelMonitor, [], false);
             self.inputMonitorMeasListIdx    = self.AddNumericalMeasurement(1, self.enum.MeasurementInputMonitor, [], false);
@@ -400,16 +404,19 @@ classdef Measurement < handle
             tm = self.tm;
         end
         
-        function StartMeasurement(self, period)
-            
+        function StartMeasurement(self, period, timeout)
+            if nargin < 3
+                timeout = 15000;
+            end
             self.tm.ExecutionMode = 'fixedRate';
             
             self.tm.Period = period;
-            self.tm.TimerFcn = @self.TimerCallback;
+            
             
             self.tm.BusyMode = 'queue';
             self.tm.UserData = self;
-            self.upx.StartMeasurementWaitOPC(15000);
+            
+            self.upx.StartMeasurementWaitOPC(timeout);
             start(self.tm)
         end
         

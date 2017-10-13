@@ -763,13 +763,25 @@ namespace TestLibrary
       generatedClass.Append(@"
       private class RealTimeHandler
       {
-        FileStream stream;
         CommandDefinition cmdDef;
+        IStandardCommunication communication;
+        Stream stream;
+        UInt32 readSize;
         byte[] realtimeData;
-        public RealTimeHandler(CommandDefinition cmdDef, FileStream stream)
+
+        public RealTimeHandler(IStandardCommunication communication, CommandDefinition cmdDef, Stream stream, UInt32 readSize)
         {
+          this.communication = communication;
           this.cmdDef = cmdDef;
           this.stream = stream;
+          this.readSize = readSize;
+
+          communication.SetEventReceiver(cmdDef.CommandId, (NewRealtimeEventDelegate)Handler);
+
+          if (readSize == 0)
+            realtimeData = new byte[stream.Length];
+          else
+            realtimeData = new byte[readSize];
         }
         void Handler(ushort command, ref Parameters parameters, Stream data, int inBulkLength)
         {
@@ -783,25 +795,24 @@ namespace TestLibrary
           }
           data.Write(realtimeData, 0, realtimeData.Length);
         }
-        public void SetRealTimeEventReceiver(IStandardCommunication communication, string fullFilename, UInt32 readSize)
-        {
-          communication.SetEventReceiver(cmdDef.CommandId, (NewRealtimeEventDelegate)Handler);
-          stream = new FileStream(fullFilename, FileMode.Open, FileAccess.Read);
-          if (readSize == 0)
-            realtimeData = new byte[stream.Length];
-          else
-            realtimeData = new byte[readSize];
-        }
-      }"
-      );
-      generatedClass.Append(@"
+      }
       public void SetRealTimeEventReceiver(UInt16 cmdId, string filename, UInt32 readSize)
       {
-        FileStream stream = null;
-        RealTimeHandler realtimeHandler = new RealTimeHandler(interpreter.GetCommandDefinition(cmdId), stream);
-        realtimeHandler.SetRealTimeEventReceiver(communication, filename, readSize); 
+        FileStream stream = new FileStream(filename, FileMode.Open, FileAccess.Read);
+        RealTimeHandler realtimeHandler = new RealTimeHandler(communication, interpreter.GetCommandDefinition(cmdId), stream, readSize);
       }"
       );
+      for (int i = 0; i < bulkParameterTypes.Length; i++)
+      {
+        generatedClass.Append(@"
+        public void SetRealTimeEventReceiver(UInt16 cmdId, " + bulkParameterTypes[i] + @"[] bulk, UInt32 readSize)
+        {
+          Bulk.Bulk temp = new Bulk.Bulk(bulk);
+          Stream stream = temp.GetStream();
+          RealTimeHandler realtimeHandler = new RealTimeHandler(communication, interpreter.GetCommandDefinition(cmdId), stream, readSize);
+        }"
+        );
+      }
       string cmdDes = "public string[] cmdDescriptions = new string[] {\r\n" + dataclassDescription + "\r\n};";
       string cmdN = "public string[] cmdNames = new string[] {\r\n" + cmdNames + "\r\n};";
       generatedClass.Append(setupEventReceivers.ToString());

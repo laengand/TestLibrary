@@ -22,7 +22,8 @@ function [tf, chList, fig] = PediatricNoiseTest(fm, x, y, figureVisibleOption)
         'lowerSlopeValid', false, ...
         'upperSlopeValid', false ... 
     );
-
+    tf = false;
+    
     % remove inf values
     infTF = isinf(y);
     y = y(~infTF);
@@ -99,7 +100,9 @@ function [tf, chList, fig] = PediatricNoiseTest(fm, x, y, figureVisibleOption)
     %% 100 dB/octave slope for the first 60 dB
     lower60dBLevelIdx = find(yMax - y(1:yMaxIdx-1) >= 60,1, 'last');
     upper60dBLevelIdx = yMaxIdx + find(yMax - y(yMaxIdx+1:end) >= 60,1, 'first');
-    
+    if(isempty(lower60dBLevelIdx) || isempty(upper60dBLevelIdx))
+        return;
+    end
     % lower
     oc1 = 0;
     y1 = y(lower60dBLevelIdx);
