@@ -55,8 +55,19 @@ function [tf, chList, fig] = NarrowbandNoiseTest (fm, x, y, figureVisibleOption)
             span = span + 1;
         end
         
-        % smooth the data set
+        % smooth the data set 
         y = smooth(y, span);
+        
+        % Note: The smoothing command returns a column vector no matter if 
+        % the input is a row or column vector. We change the y vectors 
+        % dimensions to match the x vector
+        
+        yRow = size(y);
+        xRow = size(x);
+        
+        if(yRow ~= xRow)
+            y = y.';
+        end
 %         y = smooth(y, 'sgolay');
         
         % draw the smoothed line

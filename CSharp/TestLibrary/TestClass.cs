@@ -783,6 +783,13 @@ namespace TestLibrary
           else
             realtimeData = new byte[readSize];
         }
+
+        ~RealTimeHandler()
+        {
+          if (stream != null)
+            stream.Dispose();
+        }
+
         void Handler(ushort command, ref Parameters parameters, Stream data, int inBulkLength)
         {
           if (cmdDef.CommandType != CommandStatus.BulkReceived)
@@ -796,6 +803,7 @@ namespace TestLibrary
           data.Write(realtimeData, 0, realtimeData.Length);
         }
       }
+
       public void SetRealTimeEventReceiver(UInt16 cmdId, string filename, UInt32 readSize)
       {
         FileStream stream = new FileStream(filename, FileMode.Open, FileAccess.Read);
@@ -804,8 +812,8 @@ namespace TestLibrary
       );
       for (int i = 0; i < bulkParameterTypes.Length; i++)
       {
-        generatedClass.Append(@"
-        public void SetRealTimeEventReceiver(UInt16 cmdId, " + bulkParameterTypes[i] + @"[] bulk, UInt32 readSize)
+        generatedClass.Append(
+        @"public void SetRealTimeEventReceiver(UInt16 cmdId, " + bulkParameterTypes[i] + @"[] bulk, UInt32 readSize)
         {
           Bulk.Bulk temp = new Bulk.Bulk(bulk);
           Stream stream = temp.GetStream();
@@ -813,6 +821,8 @@ namespace TestLibrary
         }"
         );
       }
+
+      
       string cmdDes = "public string[] cmdDescriptions = new string[] {\r\n" + dataclassDescription + "\r\n};";
       string cmdN = "public string[] cmdNames = new string[] {\r\n" + cmdNames + "\r\n};";
       generatedClass.Append(setupEventReceivers.ToString());
