@@ -39,6 +39,13 @@ classdef FFTMeasurement < Measurement
             self.avgCount = avgCount;
         end
         
+        function [size, window, avgMode, avgCount] = GetFFTParameters(self)
+            size = self.fftSize;
+            window = self.window;
+            avgMode = self.avgMode;
+            avgCount = self.avgCount;
+        end
+        
         function GetSetup(self)
             % GetSetup
             % Gets the current FFT Setup in the Analyzer Function window
