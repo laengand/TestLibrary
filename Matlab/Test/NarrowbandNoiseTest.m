@@ -88,10 +88,10 @@ function [tf, chList, fig] = NarrowbandNoiseTest (fm, x, y, figureVisibleOption)
         
         % draw the determined cut-off frequencies
         line([fcLower fcLower], [yMin,yMax], 'Color', 'black');
-        text(fcLower, yMax, 'fc_{Lower}');
+        text(double(fcLower), double(yMax), 'fc_{Lower}');
         
         line([fcUpper fcUpper], [yMin,yMax], 'Color', 'black');
-        text(fcUpper, yMax, 'fc_{Upper}');
+        text(double(fcUpper), double(yMax), 'fc_{Upper}');
         
         if(fcLower >=fcLowerMin && fcLower <= fcLowerMax)
             chList.fcLowerValid = true;
