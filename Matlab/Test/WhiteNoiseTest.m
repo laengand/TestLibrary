@@ -2,13 +2,13 @@ function [tf, chList, fig] = WhiteNoiseTest (tolerance, fLow, fHigh, x, y, figur
     tf = false;
     chList.level = false;
     
-    xStartIdx = find(x <= fLow, 1, 'last');
-    xEndIdx = find(x >= fHigh, 1, 'first');
+    xStartIdx = find(x <= fLow, 1, 'last')+1;
+    xEndIdx = find(x >= fHigh, 1, 'first')-1;
     
     average = mean(y(xStartIdx:xEndIdx));
     fig = figure('Visible', figureVisibleOption);
-    lineFft = semilogx(x,y);
-    
+    semilogx(x,y);
+        
     line([fLow fHigh], [average average] + tolerance, 'Color','r');
     line([fLow fHigh], [average average] - tolerance, 'Color','r');
     
@@ -16,7 +16,5 @@ function [tf, chList, fig] = WhiteNoiseTest (tolerance, fLow, fHigh, x, y, figur
         chList.level = true;
         tf = true;
     end
-    
-    
 end
 
