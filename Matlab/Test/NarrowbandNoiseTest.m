@@ -75,10 +75,12 @@ function [tf, chList, fig] = NarrowbandNoiseTest (fm, x, y, figureVisibleOption)
         [yMax, yMaxIdx] = max(y);
         yMin = min(y);
         
+        f3dB = FindLevel(x,y,yMax-3);
+        
+        fcLower = f3dB(1);
+        fcUpper = f3dB(2);
         fcLowerIdx = find(yMax - y(1:yMaxIdx-1)>= 3,1, 'last');
-        fcLower = x(fcLowerIdx);
         fcUpperIdx = yMaxIdx + find(yMax - y(yMaxIdx+1:end) >= 3, 1, 'first');
-        fcUpper = x(fcUpperIdx);
         
         % draw the band limits
         line([fcLowerMin fcLowerMin], [yMin yMax], 'Color', 'red');
@@ -135,7 +137,7 @@ function [tf, chList, fig] = NarrowbandNoiseTest (fm, x, y, figureVisibleOption)
         
         ocXUpperIdx = (x >= f1) & (x <= f2); 
         ocXUpper = x(ocXUpperIdx);
-        ocYUpper = LogInterpolate(ocXUpper, f1, f2, y1, y2);
+        ocYUpper = LogInterpolate(ocXUpper, f1, f2, [], y1, y2);
         ocYUpperData = y(ocXUpperIdx);
         validPoints = ocYUpperData < ocYUpper;
         
@@ -176,10 +178,7 @@ function [tf, chList, fig] = NarrowbandNoiseTest (fm, x, y, figureVisibleOption)
             tf = true;
         end
     catch ex
-       disp(ex.message)
-       for k=1:length(ex.stack)
-           ex.stack(k)
-       end
+        DisplayException(ex)
     end
     
 end
