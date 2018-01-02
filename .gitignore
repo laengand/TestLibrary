@@ -8,3 +8,9 @@ EventHandler*
 Matlab/Doc/helpfiles/*
 Matlab/Doc/html/*
 Matlab/DotNetLibrary/GeneratedCommunicator*.dll
+*.html
+*.mat
+*.zip
+*.fig
+*.xml
+*.db

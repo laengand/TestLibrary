@@ -1,27 +1,11 @@
-function [yOffset, e] = CurveFit(x, y, xRef, yRef, stepSize)
-    
-    
-    yOffset = inf;
-    e = inf;
-    minError = inf;
+function [yOffset, e] = CurveFit(x, y, xRef, yRef)
+    %% CurveFit
+    % This function attempt to will fit a reference curve [xRef,yRef] to a
+    % dataset [x,y], by sweeping the reference curve along the y-axis. The
+    % function assumes that x and xRef have the same resolution, and that
+    % they contain overlapping values
         
-    minYRef = min(yRef);
-    maxYRef = max(yRef);
-    minY = min(y);
-    maxY = max(y);
-    
-    limit1 = maxY-minYRef;
-    limit2 = minY-maxYRef;
-    if(isinf(maxYRef) ||isinf(minYRef) || isinf(maxY) || isinf(minY))
-        return
-    end
-    if(limit1 < limit2)
-        searchInterval = limit1:stepSize:limit2;
-    else
-        searchInterval = limit2:stepSize:limit1;
-    end
-    
-    [~,xIdx] = intersect(x,xRef);
+    [~,xIdx] = intersect(x, xRef);
     if isrow(x)
         window = false(1,length(x));
     else
@@ -29,16 +13,8 @@ function [yOffset, e] = CurveFit(x, y, xRef, yRef, stepSize)
     end
     
     window(xIdx) = true;
-    
-    for i=1:length(searchInterval)
-        offset = searchInterval(i);
-        testCurve = (yRef + offset);
-        
-        e(i) = sum((testCurve - y(window)).^2)/length(searchInterval);
-        if(e(i) < minError)
-            minError = e(i);
-            yOffset = offset;
-        end
-    end
+               
+    yOffset = sum((y(window) - yRef))/length(yRef);
+    e =  (y(window) + yOffset - yRef).^2;
 end
 

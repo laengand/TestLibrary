@@ -114,7 +114,7 @@ function [tf, chList, fig] = NarrowbandNoiseTest (fm, x, y, figureVisibleOption)
         
         ocXLowerIdx = (x >= f1) & (x <= f2);
         ocXLower = x(ocXLowerIdx);
-        ocYLower = LogInterpolate(ocXLower, f1, f2, y1, y2);
+        ocYLower = LogInterpolate(ocXLower, f1, f2, [], y1, y2);
         ocYLowerData = y(ocXLowerIdx);
         
         if(all(ocYLowerData <= ocYLower))

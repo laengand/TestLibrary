@@ -1,4 +1,6 @@
 function [tf, chList, fig] = BroadbandNoiseTest(x, y, figureVisibleOption)
+    %% BroadbandNoiseTest
+    
     tf = false;
     chList.shapeValid = false;
     
@@ -21,7 +23,7 @@ function [tf, chList, fig] = BroadbandNoiseTest(x, y, figureVisibleOption)
     
     window = (f > 200 & f < 5000);
     
-    [yOffset, e] = CurveFit(f, resp, f(window), snNominal(window), stepSize);
+    yOffset = CurveFit(f, resp, f(window), snNominal(window));
     
     lUpper.XData = f;
     lUpper.YData = snUpper + yOffset;
