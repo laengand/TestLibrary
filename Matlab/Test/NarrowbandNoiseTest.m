@@ -76,9 +76,16 @@ function [tf, chList, fig] = NarrowbandNoiseTest (fm, x, y, figureVisibleOption)
         yMin = min(y);
         
         f3dB = FindLevel(x,y,yMax-3);
-        
+                
+        % draw the determined cut-off frequencies 
+        for i = 1:length(f3dB)
+            line(lineFft.Parent, f3dB(i),yMax-3,'marker','.', 'color','r')
+            line(lineFft.Parent, [f3dB(i) f3dB(i)], [yMin, yMax], 'Color', 'black');
+            text(lineFft.Parent, double(f3dB(i)), double(yMax), ['f_' num2str(i)]);
+        end
         fcLower = f3dB(1);
         fcUpper = f3dB(2);
+        
         fcLowerIdx = find(yMax - y(1:yMaxIdx-1)>= 3,1, 'last');
         fcUpperIdx = yMaxIdx + find(yMax - y(yMaxIdx+1:end) >= 3, 1, 'first');
         
@@ -88,12 +95,6 @@ function [tf, chList, fig] = NarrowbandNoiseTest (fm, x, y, figureVisibleOption)
         line([fcUpperMin fcUpperMin], [yMin yMax], 'Color', 'red');        
         line([fcUpperMax fcUpperMax], [yMin yMax], 'Color', 'red');
         
-        % draw the determined cut-off frequencies
-        line([fcLower fcLower], [yMin,yMax], 'Color', 'black');
-        text(double(fcLower), double(yMax), 'fc_{Lower}');
-        
-        line([fcUpper fcUpper], [yMin,yMax], 'Color', 'black');
-        text(double(fcUpper), double(yMax), 'fc_{Upper}');
         
         if(fcLower >=fcLowerMin && fcLower <= fcLowerMax)
             chList.fcLowerValid = true;

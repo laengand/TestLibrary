@@ -2,7 +2,7 @@ function xLevelList = FindLevel(x, y, yLevel)
     %% Find Level
     % FindLevel(x, y, yLevel) finds the x-value(xLevel) corresponding to 
     % yLevel in the dataset given by x,y. The xLevel is found by fitting a 
-    % 2nd order polynomial to the 4 dataset values closest to the 
+    % 3nd order polynomial to the 4 dataset values closest to the 
     % (xLevel,yLevel) dataset. If more than 1 xLevel corresponds to the 
     % yLevel, then a vector of xLevels is returned.
     %
@@ -33,10 +33,15 @@ function xLevelList = FindLevel(x, y, yLevel)
         if(idx(i) ~= idx(i+1))
             xPol = x(i-1:i+2);
             yPol = y(i-1:i+2);
-            pfit = polyfit(xPol,yPol,2);
-            % y = ax^2 + bx + c
-            % pfit = [a b c]
-            % solve 0 = ax^2 + bx + c-y for x
+            
+            id = 'MATLAB:polyfit:RepeatedPointsOrRescale'; % supress warning
+            warning('off',id)
+            pfit = polyfit(xPol,yPol,3);
+            warning('on',id)
+            
+            % y = ax^3 + bx^2 + cx + d
+            % pfit = [a b c d]
+            % solve 0 = ax^3 + bx^2 + cx + d-y for x
             xRoots = roots([pfit(1:end-1) pfit(end)-yLevel]);
             xLevel = xRoots(x(i) < xRoots & xRoots < x(i+1));
             xLevelList = [xLevelList xLevel]; %#ok

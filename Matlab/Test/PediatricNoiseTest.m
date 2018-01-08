@@ -41,15 +41,15 @@ function [tf, chList, fig] = PediatricNoiseTest(fm, x, y, figureVisibleOption)
         yMin = min(y);
         f3dB = FindLevel(x,y,yMax-3);
         
-        f1 = f3dB(1);
-        f2 = f3dB(2);
+        
         % draw the determined cut-off frequencies
         for i = 1:length(f3dB)
             line(f3dB(i),yMax-3,'marker','.', 'color','r')
             line(ph.Parent, [f3dB(i) f3dB(i)], [yMin, yMax], 'Color', 'black');
             text(ph.Parent, double(f3dB(i)), double(yMax), ['f_' num2str(i)]);
         end
-        
+        f1 = f3dB(1);
+        f2 = f3dB(2);
         freq = [    80,  125,  160,  200,  250,   315,  400,  500,   630,  750,    800, 1000,  1250, 1500,  1600, 2000,   2500, 3000,   3150, 4000, 5000, 6000, 6300, 8000, 9000, 10000, 11200, 12500, 14000, 16000];
         bwPct = [ 0.29, 0.29, 0.29, 0.29, 0.29, 0.277, 0.26, 0.24, 0.219, 0.20, 0.1944, 0.17, 0.149, 0.13, 0.126, 0.11, 0.0984, 0.09, 0.0886, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08,  0.08,  0.08,  0.08,  0.08,  0.08];
         
@@ -142,9 +142,9 @@ function [tf, chList, fig] = PediatricNoiseTest(fm, x, y, figureVisibleOption)
         
         hold(ph.Parent, 'off');
         if( chList.f1Valid && ...
-                chList.f2Valid && ...
-                chList.lowerSlopeValid && ...
-                chList.upperSlopeValid)
+            chList.f2Valid && ...
+            chList.lowerSlopeValid && ...
+            chList.upperSlopeValid)
             tf = true;
         end
         
