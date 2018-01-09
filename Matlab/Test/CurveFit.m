@@ -15,6 +15,6 @@ function [yOffset, e] = CurveFit(x, y, xRef, yRef)
     window(xIdx) = true;
                
     yOffset = sum((y(window) - yRef))/length(yRef);
-    e =  (y(window) + yOffset - yRef).^2;
+    e = (y(window) - (yRef + yOffset) ).^2;
 end
 

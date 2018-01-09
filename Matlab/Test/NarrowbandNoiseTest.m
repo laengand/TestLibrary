@@ -41,7 +41,7 @@ function [tf, chList, fig] = NarrowbandNoiseTest (fm, x, y, figureVisibleOption)
         
         hold(lineFft.Parent,'on')
         
-        title(['Single-Sided Amplitude Spectrum ' num2str(fm) ' Hz'])
+        title(['Narrowband Noise ' num2str(fm) ' Hz'])
         xlabel('Hz')
         ylabel('dB')
         numData = length(x(x > fcLowerMin & x < fcUpperMax));

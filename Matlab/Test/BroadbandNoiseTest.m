@@ -16,7 +16,9 @@ function [tf, chList, fig] = BroadbandNoiseTest(x, y, figureVisibleOption)
     
     fig = figure('Visible', figureVisibleOption);
     lineFft = semilogx(f,resp);
-    
+    title('Broadband Noise')
+    xlabel('Hz')
+    ylabel('dB')
     lUpper = line(lineFft.Parent, f, snUpper, 'Color','r');
     lLower = line(lineFft.Parent, f, snLower, 'Color','r');
     lNominal = line(lineFft.Parent, f, snNominal, 'Color','r');

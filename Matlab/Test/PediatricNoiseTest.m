@@ -32,9 +32,10 @@ function [tf, chList, fig] = PediatricNoiseTest(fm, x, y, figureVisibleOption)
         %% bandwidth check
         fig = figure('Visible', figureVisibleOption);
         ph = semilogx(x, y);
-        title(['Single-Sided Amplitude Spectrum ' num2str(fm) ' Hz'])
+        title(['Pediatric Noise ' num2str(fm) ' Hz'])
         xlabel('Hz')
         ylabel('dB')
+        
         hold(ph.Parent, 'on');
         
         [yMax, yMaxIdx ] = max(y);

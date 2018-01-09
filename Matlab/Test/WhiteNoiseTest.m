@@ -10,7 +10,10 @@ function [tf, chList, fig] = WhiteNoiseTest (tolerance, fLow, fHigh, x, y, figur
     average = mean(y(xStartIdx:xEndIdx));
     fig = figure('Visible', figureVisibleOption);
     semilogx(x,y);
-        
+    title('White Noise')
+    xlabel('Hz')
+    ylabel('dB')
+    
     line([fLow fHigh], [average average] + tolerance, 'Color','r');
     line([fLow fHigh], [average average] - tolerance, 'Color','r');
     
