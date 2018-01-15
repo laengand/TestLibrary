@@ -15,7 +15,8 @@ namespace TestLibraryConsole
       string pidFilePath = pidFolderPath + @"\USB, PID " + id.ToString("X4") + ".txt";
       CommunicatorGenerator comGen = new CommunicatorGenerator(id, pidFilePath);
       
-      comGen.Dispose();
+      //comGen.Dispose();
+      
     }
   }
 }

@@ -36,6 +36,7 @@ function [tf, chList, fig] = SpeechNoiseTest(tolerance, fFlatLow, fFlatHigh, fSl
         
         if(abs(y(windowFlat | windowSlope)-yRef) < tolerance)
             chList.shapeValid = true;
+            tf = true;
         end
         
     catch ex

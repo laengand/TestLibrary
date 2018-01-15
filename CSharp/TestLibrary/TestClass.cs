@@ -15,9 +15,10 @@ using IA.Common.StandardCommunication.Tools;
 using IA.Common.UsbCommunication;
 using System.Security.Policy;
 
+
 namespace TestLibrary
 {
-  public class CommunicatorGenerator
+  public class CommunicatorGenerator :IDisposable
   {
    
     public readonly CommandInterpreter interpreter;
@@ -56,13 +57,18 @@ namespace TestLibrary
       para.ReferencedAssemblies.Add(appPath + @"\StandardCommunication.dll");
       para.ReferencedAssemblies.Add(appPath + @"\CommunicationTools.dll");
       para.ReferencedAssemblies.Add(appPath + @"\UsbCommunication.dll");
-      
+      para.ReferencedAssemblies.Add(appPath + @"\TestLibrary.dll");
       para.OutputAssembly = appPath + @"\GeneratedCommunicator0x" + id.ToString("X4") + ".dll";
       
       string code = CreateClasses(ref interpreter);
       string debugFile = appPath + @"\debugFile.cs";
       File.WriteAllText(debugFile, code);
 
+
+      //Command cmd = _applicationObject.Commands.Item("Edit.FormatDocument", -1);
+      //object dummy = null;
+      //_applicationObject.Commands.Raise(cmd.Guid, cmd.ID, ref dummy, ref dummy);
+      //string[] files = { Path.Combine(Directory.GetCurrentDirectory(), @"CmdEntry.cs") , debugFile};
       CompilerResults results = null;
       if (!File.Exists(para.OutputAssembly))
       {
@@ -160,8 +166,7 @@ namespace TestLibrary
       ");
       generatedClass.Append("namespace TestLibrary{ ");
       generatedClass.Append("public class Communicator : MarshalByRefObject{");
-      generatedClass.Append("IStandardCommunication communication;");
-
+      
       System.Text.StringBuilder generatedCode = new System.Text.StringBuilder();
       System.Text.StringBuilder setupEventReceivers = new System.Text.StringBuilder();
       System.Text.StringBuilder dataclassDescription = new System.Text.StringBuilder();
@@ -338,7 +343,10 @@ namespace TestLibrary
 
         classDefinitions.Append((cmdDef.EventType == EventType.NotEvent ? "public " : "public ") + className + "." + className + " " + classInstanceName + ";\r\n");
 
-        classInstances.Append(classInstanceName + " = new " + className + "." + className + "(ref communication); \r\n");
+        if (cmdDef.EventType == EventType.NotEvent)
+          classInstances.Append(classInstanceName + " = new " + className + "." + className + "(ref communication, ref this.cmdQueue); \r\n");
+        else
+          classInstances.Append(classInstanceName + " = new " + className + "." + className + "(ref communication); \r\n");
 
         cmdNames.Append(@"@""" + cmdName + @"""");
         cmdNames.Append(",\r\n");
@@ -354,12 +362,27 @@ namespace TestLibrary
         System.Text.StringBuilder dataclassDefaultConstructorCode = new System.Text.StringBuilder();
         System.Text.StringBuilder dataclassConstructorCode = new System.Text.StringBuilder();
         System.Text.StringBuilder dataclassConstructorInput = new System.Text.StringBuilder();
+        System.Text.StringBuilder dataClassSetParametersWithSingleArgsInput = new System.Text.StringBuilder(); // SetParameters(p0, p1, p2,.....)
+        System.Text.StringBuilder dataClassSetParametersWithSingleArgsInputCode = new System.Text.StringBuilder();
+        System.Text.StringBuilder dataClassSetParametersWithParametersInput = new System.Text.StringBuilder(); // SetParameters(Parameters parameters)
+        System.Text.StringBuilder dataClassSetParametersWithParametersCode = new System.Text.StringBuilder();
+
+        System.Text.StringBuilder dataClassGetParametersCode = new System.Text.StringBuilder();
         dataclass.Append("public class " + classDataName + "\r\n{\r\n");
 
         dataclassDescription.Append(@"@""");
         dataclassDescription.Append("Parameters\r\n");
 
         // DATA SETTERS AND GETTERS START
+
+        dataclassConstructorCode.Append("SetParameters(");
+        dataclassDefaultConstructorCode.Append("SetParameters(");
+        dataClassSetParametersWithParametersInput.Append("Parameters parameters");
+        dataClassSetParametersWithParametersCode.Append("parameters.Position = 0;\r\n");
+
+        
+        dataClassGetParametersCode.Append("Parameters parameters = new Parameters();\r\n");
+        //codeData.Append("parameters.Write(data." + parameterName + "());\r\n");
         for (int i = 0; i < cmdDef.Parameters.Count; i++)
         {
           ParameterDefinition para = cmdDef.Parameters[i];
@@ -370,13 +393,29 @@ namespace TestLibrary
           //{
           //  dataclass.Append("public " + "e" + parameterName + " " + "e" + parameterName + ";\r\n");
           //}
+          dataClassSetParametersWithSingleArgsInput.Append(para.Type + " " + parameterName + (i < cmdDef.Parameters.Count - 1 ? ", " : ""));
+          dataClassSetParametersWithSingleArgsInputCode.Append("internal" + parameterName + " = " + parameterName + ";\r\n");
+          string enumName = "InternalEnums.e" + parameterName;
+          dataClassSetParametersWithParametersCode.Append("internal" + parameterName + " = parameters." + GetParameterReadString(para) + ";\r\n");
+          dataClassGetParametersCode.Append("parameters.Write(internal" + parameterName + ");\r\n");
 
           dataclassDescription.Append(parameterName + "\r\n");
-          dataclassConstructorCode.Append("internal" + parameterName + " = " + parameterName + ";\r\n");
-          dataclassDefaultConstructorCode.Append("internal" + parameterName + " = " + para.Default + ";\r\n");
+          dataclassConstructorCode.Append(parameterName + (i < cmdDef.Parameters.Count - 1 ? ", " : ""));
+          dataclassDefaultConstructorCode.Append(para.Default + (i < cmdDef.Parameters.Count - 1 ? ", " : ""));
           dataclassConstructorInput.Append(para.Type + " " + parameterName + (i < cmdDef.Parameters.Count - 1 ? ", " : ""));
         }
+        dataClassGetParametersCode.Append("return parameters;\r\n");
+        dataclassConstructorCode.Append(");\r\n");
+        dataclassDefaultConstructorCode.Append(");\r\n");
         dataclassDescription.Append("Reply\r\n");
+
+
+        System.Text.StringBuilder dataClassSetReplyParametersWithParametersInput = new System.Text.StringBuilder(); // SetReplyParameters(Parameters parameters)
+        System.Text.StringBuilder dataClassSetReplyParametersWithParametersCode = new System.Text.StringBuilder();
+        System.Text.StringBuilder dataClassGetReplyParametersCode = new System.Text.StringBuilder();
+
+        dataClassSetReplyParametersWithParametersInput.Append("Parameters parameters");
+        dataClassGetReplyParametersCode.Append("Parameters parameters = new Parameters();\r\n");
         for (int i = 0; i < cmdDef.ReplyParameters.Count; i++)
         {
           ParameterDefinition para = cmdDef.ReplyParameters[i];
@@ -386,9 +425,16 @@ namespace TestLibrary
           //{
           //  dataclass.Append("public " + "e" + parameterName + " " + "e" + parameterName + ";\r\n");
           //}
+
+          dataClassGetReplyParametersCode.Append("parameters.Write(internal" + parameterName + ");");
+          string enumName = "InternalEnums.e" + parameterName;
+          dataClassSetReplyParametersWithParametersCode.Append("internal" + parameterName + " = parameters." + GetParameterReadString(cmdDef.ReplyParameters[i]) + ";\r\n");
+          
           dataclass.Append(CreateDataSettersAndGetters(para, parameterName));
           dataclassDescription.Append(parameterName + "\r\n");
         }
+        dataClassGetReplyParametersCode.Append("return parameters;\r\n");
+
         // DATA SETTERS AND GETTERS END
 
         if (cmdDef.CommandType == CommandStatus.BulkSent || cmdDef.CommandType == CommandStatus.BulkReceived)
@@ -406,8 +452,35 @@ namespace TestLibrary
           dataclass.Append("public " + classDataName + "(" + dataclassConstructorInput + ")\r\n");
           dataclass.Append("{");
           dataclass.Append(dataclassConstructorCode);
-          dataclass.Append("}\r\n");
+          dataclass.Append("}\r\n");          
         }
+        //string enumName = "InternalEnums.e" + parameterName;
+        //code.Append("data." + parameterName + "(" + (isEnum ? "(" + enumName + ")" : "") + "parameters." + GetParameterReadString(para) + ");\r\n");
+        dataclass.Append("public void SetParameters(" + dataClassSetParametersWithSingleArgsInput + ")\r\n");
+        dataclass.Append("{");
+        dataclass.Append(dataClassSetParametersWithSingleArgsInputCode);
+        dataclass.Append("}\r\n");
+
+        dataclass.Append("public void SetParameters(" + dataClassSetParametersWithParametersInput  + ")\r\n");
+        dataclass.Append("{");
+        dataclass.Append(dataClassSetParametersWithParametersCode);
+        dataclass.Append("}\r\n");
+
+        dataclass.Append("public void SetReplyParameters(" + dataClassSetReplyParametersWithParametersInput + ")\r\n");
+        dataclass.Append("{");
+        dataclass.Append(dataClassSetReplyParametersWithParametersCode);
+        dataclass.Append("}\r\n");
+
+        dataclass.Append("public Parameters GetParameters()\r\n");
+        dataclass.Append("{");
+        dataclass.Append(dataClassGetParametersCode);
+        dataclass.Append("}\r\n");
+
+        dataclass.Append("public Parameters GetReplyParameters()\r\n");
+        dataclass.Append("{");
+        dataclass.Append(dataClassGetReplyParametersCode);
+        dataclass.Append("}\r\n");
+
         dataclass.Append("} ");
 
 
@@ -417,28 +490,43 @@ namespace TestLibrary
         enumNameSpace.Append("}}");
 
         cmdClass.Append(CreateEnums(cmdDef,true));
-        cmdClass.Append("public class " + className + "\r\n{\r\n");
-        cmdClass.Append("public " + className + "(){communication = null;}\r\n");
-        cmdClass.Append("public " + className + "(ref IStandardCommunication comm){communication = comm;}\r\n");
-        cmdClass.Append("private IStandardCommunication communication;\r\n");
 
+
+        cmdClass.Append("public class " + className + "\r\n{\r\n");
+        if (cmdDef.EventType == EventType.NotEvent)
+        {
+          cmdClass.Append("private TestLibrary.CmdQueue cmdQueue;\r\n");
+
+          cmdClass.Append("public " + className + "(){communication = null;\r\n cmdQueue = null;}\r\n");
+          cmdClass.Append("public " + className + "(ref IStandardCommunication comm, ref TestLibrary.CmdQueue cmdQueue){communication = comm;\r\n this.cmdQueue = cmdQueue;}\r\n");
+        }
+        else
+        { 
+          cmdClass.Append("public " + className + "(){communication = null;}\r\n");
+          cmdClass.Append("public " + className + "(ref IStandardCommunication comm){communication = comm;}\r\n");
+        }
+        cmdClass.Append("private IStandardCommunication communication;\r\n");
+        
+        
         cmdNameSpace.Append("namespace " + className + "\r\n{\r\n");
         cmdNameSpace.Append(dataclass);
-        
+
         // DATA CLASS END
 
+        System.Text.StringBuilder eventArgs = new System.Text.StringBuilder();
+        // ARGS CLASS START
+
+        string classNameArgs = "Args";
+        eventArgs.Append("public class " + classNameArgs + " : EventArgs{");
+        eventArgs.Append("public  " + classDataName + " Data;\r\n");
+        eventArgs.Append("public " + classNameArgs + " (" + classDataName + " t) { Data = t; }\r\n");
+
+        eventArgs.Append("} ");
+        // ARGS CLASS END
+        cmdClass.Append("public event EventHandler<" + classNameArgs + "> Handler;\r\n");
         if (cmdDef.EventType != EventType.NotEvent)
         {
-          System.Text.StringBuilder eventArgs = new System.Text.StringBuilder();
-          // ARGS CLASS START
 
-          string classNameArgs = "Args";
-          eventArgs.Append("public class " + classNameArgs + " : EventArgs{");
-          eventArgs.Append("public  " + classDataName + " Data;\r\n");
-          eventArgs.Append("public " + classNameArgs + " (" + classDataName + " t) { Data = t; }\r\n");
-          
-          eventArgs.Append("} ");
-          // ARGS CLASS END
 
           // EVENT CALLBACKS START
           System.Text.StringBuilder eventCallback = new System.Text.StringBuilder();
@@ -449,17 +537,17 @@ namespace TestLibrary
           cmdClass.Append("public void eventIsHandled(){eventHandled.Set();}\r\n");
           
           code.Append(classDataName + " data = new " + classDataName + "();\r\n");
-
+          code.Append("data.SetParameters(parameters);\r\n");
           for (int i = 0; i < cmdDef.Parameters.Count; i++)
           {
             ParameterDefinition para = cmdDef.Parameters[i];
-            string parameterName = formatParameter(para.ToString(), "p" + i.ToString() + "", "");
-            string enumName = "InternalEnums.e" + parameterName;
-            bool isEnum = cmdDef.Parameters[i].IsEnum;
 
-            code.Append("data." + parameterName + "(" + (isEnum ? "(" + enumName + ")" : "") + "parameters." + GetParameterReadString(para) + ");\r\n");
-            if (isEnum)
+            //bool isEnum = cmdDef.Parameters[i].IsEnum;
+            //string enumName = "InternalEnums.e" + parameterName;
+            //code.Append("data." + parameterName + "(" + (isEnum ? "(" + enumName + ")" : "") + "parameters." + GetParameterReadString(para) + ");\r\n");
+            if (cmdDef.Parameters[i].IsEnum)
             {
+              string parameterName = formatParameter(para.ToString(), "p" + i.ToString() + "", "");
               cmdClass.Append("public " + "e" + parameterName + " " + "e" + parameterName + ";\r\n");
               //  code.Append(enumName + " e" + i + " = new " + enumName + "();\r\n");
             }
@@ -491,18 +579,18 @@ namespace TestLibrary
           }
 
           code.Append("}");
-          code.Append("parameters.Position = 0;\r\n");
+          //code.Append("parameters.Position = 0;\r\n");
+          code.Append("parameters = args.Data.GetReplyParameters();\r\n");
           for (int i = 0; i < cmdDef.ReplyParameters.Count; i++)
           {
-            string parameterName = formatReplyParameter(cmdDef.ReplyParameters[i].ToString(), "p" + i.ToString() + "", "");
-            string enumName = "InternalEnums.e" + parameterName;
-            bool isEnum = cmdDef.ReplyParameters[i].IsEnum;
 
-            code.Append("parameters.Write(args.Data." + parameterName + "());\r\n");
+            //code.Append("parameters.Write(args.Data." + parameterName + "());\r\n");
             //code.Append("parameters.Write((ushort)1);\r\n");
 
-            if (isEnum)
+            if (cmdDef.ReplyParameters[i].IsEnum)
             {
+              string parameterName = formatReplyParameter(cmdDef.ReplyParameters[i].ToString(), "p" + i.ToString() + "", "");
+              string enumName = "InternalEnums.e" + parameterName;
               cmdClass.Append("public " + "e" + parameterName + " " + "e" + parameterName + ";\r\n");
             }
           }
@@ -512,9 +600,9 @@ namespace TestLibrary
           eventCallback.Append(code);
           eventCallback.Append("}");
 
-          cmdClass.Append("public event EventHandler<" + classNameArgs + "> " + eventHandlerName + ";\r\n");
+          
           eventHandlerNames[eventHandlerNameIndex++] = className;
-          cmdNameSpace.Append(eventArgs);
+          
 
           cmdClass.Append(eventCallback);
 
@@ -540,13 +628,17 @@ namespace TestLibrary
           StringBuilder codeParaArray = new StringBuilder();
           StringBuilder codeParaFile = new StringBuilder();
 
-          codeData.Append("Parameters parameters = new Parameters();\r\n");
-          codeParaFile.Append(classDataName + " data = new " + classDataName + "();\r\n");
-          codeParaArray.Append(classDataName + " data = new " + classDataName + "();\r\n");
+          //codeData.Append("Parameters parameters = new Parameters();\r\n");
+          
 
-          inputDataParameters.Append("Data data");
+          string isBlockingPara = ", bool isBlocking = true";
+          string passedIsBlockingPara = ", isBlocking";
 
-          passedInputDataParameters.Append("data");
+          inputDataParameters.Append("Data data" + isBlockingPara);
+          
+          passedInputDataParameters.Append("data" + passedIsBlockingPara);
+          codeData.Append("Parameters parameters = data.GetParameters();\r\n");
+
           for (int i = 0; i < cmdDef.Parameters.Count; i++)
           {
             string parameterName = formatParameter(cmdDef.Parameters[i].ToString(), "p" + i.ToString() + "", "");
@@ -561,16 +653,20 @@ namespace TestLibrary
             inputParaFile.Append(input);
             inputParaArray.Append(input);
 
-            codeData.Append("parameters.Write(data." + parameterName + "());\r\n");
-            codeParaFile.Append("data." + parameterName + "(" + parameterName + ");\r\n");
-            codeParaArray.Append("data." + parameterName + "(" + parameterName + ");\r\n");
+            //codeData.Append("parameters.Write(data." + parameterName + "());\r\n"); 
+
+            //codeParaFile.Append("data." + parameterName + "(" + parameterName + ");\r\n");
+            //codeParaArray.Append("data." + parameterName + "(" + parameterName + ");\r\n");
 
             if (isEnum)
             {
               cmdClass.Append("public " + "e" + parameterName + " " + "e" + parameterName + ";\r\n");
             }
           }
+          codeParaFile.Append(classDataName + " data = new " + classDataName + "("+ passedInputParaParameters + ");\r\n");
+          codeParaArray.Append(classDataName + " data = new " + classDataName + "("+ passedInputParaParameters + ");\r\n"); 
 
+          
           //if ((cmdDef.CommandId >= 0x4000) && (cmdDef.CommandId <= 0x5FFF))
           if (cmdDef.CommandType == CommandStatus.BulkReceived)
           {
@@ -578,8 +674,17 @@ namespace TestLibrary
             codeData.Append("{");
             codeData.Append("data.bulk = new Bulk.Bulk();");
             codeData.Append("}");
+            codeData.Append("if(isBlocking)");
+            codeData.Append("{");
             codeData.Append("communication.SendCommand((UInt16)" + "0x" + cmdDef.CommandId.ToString("X4") + ", ref parameters, data.bulk.GetStream());\r\n");
             codeData.Append("data.bulk.FromStream(data.bulk.GetStream());\r\n");
+            codeData.Append("}");
+            codeData.Append("else");
+            codeData.Append("{");
+            codeData.Append("TestLibrary.CmdEntry entry = new TestLibrary.CmdEntry((UInt16)" + "0x" + cmdDef.CommandId.ToString("X4") + ", parameters, data.bulk.GetStream(), 0, Callback);\r\n");
+            codeData.Append("cmdQueue.Enqueue(entry);\r\n");
+            codeData.Append("}");
+
           }
           //else if ((cmdDef.CommandId >= 0x8000) && (cmdDef.CommandId <= 0xBFFF))
           else if (cmdDef.CommandType == CommandStatus.BulkSent)
@@ -588,11 +693,27 @@ namespace TestLibrary
             codeData.Append("{");
             codeData.Append(@"throw new System.InvalidOperationException(@""" + "bulk = null is not allowed when sending bulk data" + @""");");
             codeData.Append("}");
+            codeData.Append("if(isBlocking)");
+            codeData.Append("{");
             codeData.Append("communication.SendCommand((UInt16)" + "0x" + cmdDef.CommandId.ToString("X4") + ", ref parameters, data.bulk.GetStream(), (int)data.bulk.GetStreamLength());\r\n");
+            codeData.Append("}");
+            codeData.Append("else");
+            codeData.Append("{");
+            codeData.Append("TestLibrary.CmdEntry entry = new TestLibrary.CmdEntry((UInt16)" + "0x" + cmdDef.CommandId.ToString("X4") + ", parameters, data.bulk.GetStream(), (int)data.bulk.GetStreamLength(), Callback);\r\n");
+            codeData.Append("cmdQueue.Enqueue(entry);\r\n");
+            codeData.Append("}");
           }
           else
           {
+            codeData.Append("if(isBlocking)");
+            codeData.Append("{");
             codeData.Append("communication.SendCommand((UInt16)" + "0x" + cmdDef.CommandId.ToString("X4") + ", ref parameters);\r\n");
+            codeData.Append("}");
+            codeData.Append("else");
+            codeData.Append("{");
+            codeData.Append("TestLibrary.CmdEntry entry = new TestLibrary.CmdEntry((UInt16)" + "0x" + cmdDef.CommandId.ToString("X4") + ", parameters, null, 0, Callback);\r\n");
+            codeData.Append("cmdQueue.Enqueue(entry);\r\n");
+            codeData.Append("}");
           }
 
 
@@ -609,9 +730,14 @@ namespace TestLibrary
               cmdClass.Append("public " + "e" + parameterName + " " + "e" + parameterName + ";\r\n");
             }
           }
-
+          
           codeData.Append("return data;");
           // 
+
+
+          //string isBlockingPara = (inputParaArray.Length > 0 ? ", " : "") + "bool isBlocking = true";
+          //string passedIsBlockingPara = (inputParaArray.Length > 0 ? ", " : "") + " isBlocking";
+
           sendDataWrapper.Append("public " + classDataName + " Send");
           sendDataWrapper.Append("(" + inputDataParameters + ")");
           sendDataWrapper.Append("{");
@@ -622,6 +748,8 @@ namespace TestLibrary
           string docStart = "/// <summary>\r\n";
           string doc = "/// Sends a command using its Data class\r\n";
           string docEnd = "/// <summary>\r\n";
+          
+
 
           classFunctions.Append(docStart + doc + docEnd);
           classFunctions.Append("public " + className + "." + classDataName + " " + className + cmdName + "(" + className + "." + inputDataParameters + ")");
@@ -631,6 +759,9 @@ namespace TestLibrary
 
           if (cmdDef.CommandType == CommandStatus.BulkSent || cmdDef.CommandType == CommandStatus.BulkReceived)
           {
+
+            string bulkPara;
+            string passedBulkPara;
             codeParaFile.Append("data.bulk = new Bulk.Bulk();\r\n");
             if (cmdDef.CommandType == CommandStatus.BulkSent)
             {
@@ -638,93 +769,121 @@ namespace TestLibrary
               codeParaFile.Append("return Send(" + passedInputDataParameters + ");");
 
               codeParaArray.Append("data.bulk = new Bulk.Bulk(bulk);\r\n");
-              codeParaArray.Append("return Send(" + passedInputDataParameters + ");");
+              codeParaArray.Append("return Send(" + passedInputDataParameters  + ");");
               foreach (string s in bulkParameterTypes)
               {
 
-                string bulkPara = (inputParaArray.Length > 0 ? ", " : "") + s + "[] bulk";
-                string passedBulkPara = (inputParaFile.Length > 0 ? ", " : "") + " bulk";
+                bulkPara = (inputParaArray.Length > 0 ? ", " : "") + s + "[] bulk";
+                passedBulkPara = (inputParaFile.Length > 0 ? "," : "") + " bulk";
+
+                isBlockingPara = (inputParaArray.Length + bulkPara.Length > 0 ? ", " : "") + "bool isBlocking = true";
+                passedIsBlockingPara = (inputParaArray.Length + bulkPara.Length > 0 ? ", " : "") + " isBlocking";
 
                 sendParaArrayWrapper.Append("public " + classDataName + " Send");
-                sendParaArrayWrapper.Append("(" + inputParaArray + bulkPara + ")");
+                sendParaArrayWrapper.Append("(" + inputParaArray + bulkPara + isBlockingPara + ")");
                 sendParaArrayWrapper.Append("{");
                 sendParaArrayWrapper.Append(codeParaArray);
                 sendParaArrayWrapper.Append("}");
 
                 doc = "/// Sends a command using the associated parameters\r\n";
                 classFunctions.Append(docStart + doc + docEnd);
-                classFunctions.Append("public " + className + "." + classDataName + " " + className + cmdName + "(" + inputParaArray + bulkPara + ")");
+                classFunctions.Append("public " + className + "." + classDataName + " " + className + cmdName + "(" + inputParaArray + bulkPara + isBlockingPara + ")");
                 classFunctions.Append("{");
-                classFunctions.Append("return " + classInstanceName + ".Send(" + passedInputParaParameters + passedBulkPara + ");");
+                classFunctions.Append("return " + classInstanceName + ".Send(" + passedInputParaParameters + passedBulkPara + passedIsBlockingPara + ");");
                 classFunctions.Append("}\r\n");
               }
             }
             else
             {
-              
-              codeParaFile.Append("Send(" + passedInputDataParameters + ");");
+              isBlockingPara = (inputParaArray.Length > 0 ? ", " : "") + "bool isBlocking = true";
+              passedIsBlockingPara = (inputParaArray.Length > 0 ? ", " : "") + " isBlocking";
+
+              codeParaFile.Append("Send(" + passedInputDataParameters  + ");");
               codeParaFile.Append("data.bulk.ToFile(bulkPath);");
               codeParaFile.Append("return data;");
 
               codeParaArray.Append("data.bulk = new Bulk.Bulk();\r\n");
-              codeParaArray.Append("return Send(" + passedInputDataParameters + ");");
+              codeParaArray.Append("return Send(" + passedInputDataParameters +");");
 
               sendParaArrayWrapper.Append("public " + classDataName + " Send");
-              sendParaArrayWrapper.Append("(" + inputParaArray + ")");
+              sendParaArrayWrapper.Append("(" + inputParaArray + isBlockingPara + ")");
               sendParaArrayWrapper.Append("{");
               sendParaArrayWrapper.Append(codeParaArray);
               sendParaArrayWrapper.Append("}");
 
               doc = "/// Sends a command using the associated parameters\r\n";
               classFunctions.Append(docStart + doc + docEnd);
-              classFunctions.Append("public " + className + "." + classDataName + " " + className + cmdName + "(" + inputParaArray + ")");
+              classFunctions.Append("public " + className + "." + classDataName + " " + className + cmdName + "(" + inputParaArray + isBlockingPara + ")");
               classFunctions.Append("{");
-              classFunctions.Append("return " + classInstanceName + ".Send(" + passedInputParaParameters + ");");
+              classFunctions.Append("return " + classInstanceName + ".Send(" + passedInputParaParameters + passedIsBlockingPara + ");");
               classFunctions.Append("}\r\n");
             }
 
             // Bulk from/to file
-            {
-              string bulkPara = (inputParaFile.Length > 0 ? ", " : "") + "System.String bulkPath";
-              string passedBulkPara = (inputParaFile.Length > 0 ? ", " : "") + " bulkPath";
-              sendParaFileWrapper.Append("public " + classDataName + " Send");
-              sendParaFileWrapper.Append("(" + inputParaFile + bulkPara + ")");
-              sendParaFileWrapper.Append("{");
-              sendParaFileWrapper.Append(codeParaFile);
-              sendParaFileWrapper.Append("}");
+            isBlockingPara = ", bool isBlocking = true";
+            passedIsBlockingPara = ", isBlocking";
+            bulkPara = (inputParaFile.Length > 0 ? ", " : "") + "System.String bulkPath";
+            passedBulkPara = (inputParaFile.Length > 0 ? ", " : "") + " bulkPath";
 
-              doc = "/// Sends a command using the associated parameters\r\n";
-              classFunctions.Append(docStart + doc + docEnd);
-              classFunctions.Append("public " + className + "." + classDataName + " " + className + cmdName + "(" + inputParaArray + bulkPara + ")");
-              classFunctions.Append("{");
-              classFunctions.Append("return " + classInstanceName + ".Send(" + passedInputParaParameters + passedBulkPara + ");");
-              classFunctions.Append("}\r\n");
-            }
+
+            sendParaFileWrapper.Append("public " + classDataName + " Send");
+            sendParaFileWrapper.Append("(" + inputParaFile + bulkPara + isBlockingPara +")");
+            sendParaFileWrapper.Append("{");
+            sendParaFileWrapper.Append(codeParaFile);
+            sendParaFileWrapper.Append("}");
+
+            doc = "/// Sends a command using the associated parameters\r\n";
+            classFunctions.Append(docStart + doc + docEnd);
+            classFunctions.Append("public " + className + "." + classDataName + " " + className + cmdName + "(" + inputParaArray + bulkPara + isBlockingPara + ")");
+            classFunctions.Append("{");
+            classFunctions.Append("return " + classInstanceName + ".Send(" + passedInputParaParameters + passedBulkPara + passedIsBlockingPara + ");");
+            classFunctions.Append("}\r\n");
+
+
           }
           else
           {
-            codeParaArray.Append("return Send(" + passedInputDataParameters + ");");
+            isBlockingPara = (inputParaArray.Length > 0 ? ", " : "") + "bool isBlocking = true";
+            passedIsBlockingPara = (inputParaArray.Length > 0 ? ", " : "") + "isBlocking";
+            codeParaArray.Append("return Send(" + passedInputDataParameters + ");"); // Special case 
             
             sendParaArrayWrapper.Append("public " + classDataName + " Send");
-            sendParaArrayWrapper.Append("(" + inputParaArray + ")");
+            sendParaArrayWrapper.Append("(" + inputParaArray + isBlockingPara + ")");
             sendParaArrayWrapper.Append("{");
             sendParaArrayWrapper.Append(codeParaArray);
             sendParaArrayWrapper.Append("}");
 
             doc = "/// Sends a command using the associated parameters\r\n";
             classFunctions.Append(docStart + doc + docEnd);
-            classFunctions.Append("public " + className + "." + classDataName + " " + className + cmdName + "(" + inputParaArray + ")");
+            classFunctions.Append("public " + className + "." + classDataName + " " + className + cmdName + "(" + inputParaArray + isBlockingPara + ")");
             classFunctions.Append("{");
-            classFunctions.Append("return " + classInstanceName + ".Send(" + passedInputParaParameters + ");");
+            classFunctions.Append("return " + classInstanceName + ".Send(" + passedInputParaParameters + passedIsBlockingPara + ");");
             classFunctions.Append("}\r\n");
           }
           
           cmdClass.Append(sendDataWrapper.ToString() + sendParaFileWrapper.ToString() + sendParaArrayWrapper.ToString());
+          cmdClass.Append("public void Callback(ushort id, Parameters parameters, Parameters replyParameters, Stream bulk, int bulkLength)");
+          cmdClass.Append("{");
+          cmdClass.Append("if (Handler != null)");
+          cmdClass.Append("{");
+          cmdClass.Append("Data data = new Data();\r\n");
+          cmdClass.Append("data.SetParameters(parameters);\r\n");
+          cmdClass.Append("data.SetReplyParameters(replyParameters);\r\n");
 
+          if (cmdDef.CommandType == CommandStatus.BulkReceived)
+          {
+            cmdClass.Append("data.bulk.FromStream(bulk);\r\n");
+          }
+          
+          cmdClass.Append("Args args = new Args(data);\r\n");
+          cmdClass.Append("Handler.Invoke(this, args);\r\n");
+          cmdClass.Append("}");
+          cmdClass.Append("}\r\n");
           // COMMAND WRAPPERS END
 
         }
         cmdClass.Append("\r\n}\r\n"); // class
+        cmdNameSpace.Append(eventArgs);
         cmdNameSpace.Append(cmdClass);
         cmdNameSpace.Append("\r\n}\r\n");
 
@@ -735,13 +894,16 @@ namespace TestLibrary
 
       setupEventReceivers.Append("} ");
       generatedClass.Append(classDefinitions);
+      generatedClass.Append("IStandardCommunication communication;");
+      generatedClass.Append("CmdQueue cmdQueue;");
       generatedClass.Append("public List<CommandDefinition> commandList;\r\n");
       generatedClass.Append("private CommandInterpreter interpreter;\r\n");
       generatedClass.Append("public Communicator(){communication = null; commandList = null;}\r\n");
       generatedClass.Append("public Communicator(UInt16 id, string pidFile){");
       generatedClass.Append(@"this.communication = new UsbCommunication(id);
       interpreter = new CommandInterpreter(pidFile);
-      this.commandList = interpreter.CommandList;");
+      this.commandList = interpreter.CommandList;
+      this.cmdQueue = new CmdQueue(this.communication);");
       
       generatedClass.Append(classInstances);
       generatedClass.Append("}\r\n");
