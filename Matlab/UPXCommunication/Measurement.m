@@ -274,7 +274,7 @@ classdef Measurement < handle
         
         %% Frequency Phase Measurement
         function FrequencyPhaseMeasurementEnable(self, enable, channel, combinedMeasurement, graphicsHandle)
-            if nargin > 2;
+            if nargin > 2
                 self.freqPhase = combinedMeasurement;
                 self.upx.SetAnalyzerCombinedMeasurement(combinedMeasurement);
                 self.numericalMeasurementList(self.frequencyMeasListIdx).channel = channel;
@@ -285,7 +285,7 @@ classdef Measurement < handle
         
         %% Level Monitor
         function LevelMonitorEnable(self, enable, channel, levelMonitor, graphicsHandle)
-            if nargin > 2;
+            if nargin > 2
                 self.levelMonitor = levelMonitor;
                 self.upx.SetAnalyzerLevelMonitor(levelMonitor);
                 self.levelMonitor = levelMonitor;
@@ -297,7 +297,7 @@ classdef Measurement < handle
         
         %% Input Monitor
         function InputMonitorEnable(self, enable, channel, inputMonitor, graphicsHandle)
-            if nargin > 2;
+            if nargin > 2
                 self.inputMonitor = inputMonitor;
                 self.upx.SetAnalyzerInputMonitor(inputMonitor);
                 self.numericalMeasurementList(self.inputMonitorMeasListIdx).channel = channel;
@@ -309,7 +309,7 @@ classdef Measurement < handle
         
         %% Waveform
         function WaveformEnable(self, enable, graphicsHandle, postMeasFunction)
-            if nargin > 2;
+            if nargin > 2
                 self.traceMeasurementList(self.waveformMeasListIdx).graphicsHandle = graphicsHandle;
                 self.traceMeasurementList(self.waveformMeasListIdx).postMeasFunction = postMeasFunction;
             end
@@ -330,7 +330,7 @@ classdef Measurement < handle
         
         %% BarGraph
         function BarGraphEnable(self, enable, graphicsHandle)
-            if nargin > 2;
+            if nargin > 2
                 self.traceMeasurementList(self.barGraphMeasListIdx).graphicsHandle = graphicsHandle;
             end
             self.traceMeasurementList(self.barGraphMeasListIdx).enable = enable;
@@ -404,6 +404,17 @@ classdef Measurement < handle
         function tm = GetTimer(self)
             tm = self.tm;
         end
+
+        function StartSingleMeasurement(self, timeout)
+            if nargin < 2
+                timeout = 15000;
+            end
+            
+            self.upx.SetMeasurementMode(0); % set single measuring mode.
+            self.upx.StartMeasurementWaitOPC(timeout);
+            
+            self.TimerCallback;
+        end
         
         function StartMeasurement(self, period, timeout)
             if nargin < 3
@@ -417,6 +428,7 @@ classdef Measurement < handle
             self.tm.BusyMode = 'queue';
             self.tm.UserData = self;
             
+            self.upp.SetMeasurementMode(1); % set continuous measuring mode.
             self.upx.StartMeasurementWaitOPC(timeout);
             start(self.tm)
         end
@@ -504,7 +516,7 @@ classdef Measurement < handle
                 if(self.numericalMeasurementList(i).enable)
                     [status, measurementResult, units] = self.upx.ReadMeasurementResult(self.numericalMeasurementList(i).channel, self.numericalMeasurementList(i).measurement);
                     
-                    if status ~= 0;
+                    if status ~= 0
                         warning(['Numerical measurement error: ' num2str(status)])
                     end
                     

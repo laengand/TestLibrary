@@ -286,6 +286,14 @@ classdef TestRunner < handle
             self.stateNew = TestRunnerState.STOP;
         end
         
+        function state = GetCurrentState(self)
+            state = self.stateNew;
+        end
+
+        function stopped = IsStopped(self)
+            stopped = (TestRunnerState.STOP == self.stateNew);
+        end
+        
         %% Test events
         function NotifySetupDone(self)
             if(self.stateNew ~= TestRunnerState.STOP)
