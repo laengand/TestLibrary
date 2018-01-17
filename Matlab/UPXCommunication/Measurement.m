@@ -28,13 +28,11 @@ classdef Measurement < handle
         % BarGraph
         barGraph;
     end
-    
     properties(Access = protected)
         upx;
         tm;
         enum;
         
-        numericalMeasurementList;
         traceMeasurementList;
         
         functionMeasListIdx;
@@ -45,6 +43,9 @@ classdef Measurement < handle
         
         waveformMeasListIdx;
         barGraphMeasListIdx;
+    end
+    properties(Access = public)
+        numericalMeasurementList;
     end
     
     properties(Constant)
@@ -84,7 +85,7 @@ classdef Measurement < handle
 
     end
     
-    methods(Access = protected)
+    methods(Access = public)
         %% Numerical Measurements
         function idx = AddNumericalMeasurement(self, channel, measurement, graphicsHandle, enable)
             if(isempty(self.numericalMeasurementList))
@@ -98,7 +99,8 @@ classdef Measurement < handle
             self.numericalMeasurementList(end).enable = enable;
             idx = length(self.numericalMeasurementList);
         end
-        
+    end
+    methods(Access = protected)
         function SetNumericalPostMeasFunction(self, idx, postMeasFunction)
             self.numericalMeasurementList(idx).postMeasFunction = postMeasFunction;
         end
@@ -428,7 +430,7 @@ classdef Measurement < handle
             self.tm.BusyMode = 'queue';
             self.tm.UserData = self;
             
-            self.upp.SetMeasurementMode(1); % set continuous measuring mode.
+            self.upx.SetMeasurementMode(1); % set continuous measuring mode.
             self.upx.StartMeasurementWaitOPC(timeout);
             start(self.tm)
         end
