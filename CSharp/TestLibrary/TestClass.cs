@@ -338,7 +338,6 @@ namespace TestLibrary
         string cmdName = className.Remove(0, 5);
         className = className.Substring(0, 5);
 
-        //string classInstanceName = cmdDef.EventType == EventType.NotEvent ? cmdName : className;
         string classInstanceName = className;
 
         classDefinitions.Append((cmdDef.EventType == EventType.NotEvent ? "public " : "public ") + className + "." + className + " " + classInstanceName + ";\r\n");
@@ -382,17 +381,14 @@ namespace TestLibrary
 
         
         dataClassGetParametersCode.Append("Parameters parameters = new Parameters();\r\n");
-        //codeData.Append("parameters.Write(data." + parameterName + "());\r\n");
+        
         for (int i = 0; i < cmdDef.Parameters.Count; i++)
         {
           ParameterDefinition para = cmdDef.Parameters[i];
           string parameterName = formatParameter(para.Discription, "p" + i.ToString(), "");
           bool isEnum = cmdDef.Parameters[i].IsEnum;
           dataclass.Append(CreateDataSettersAndGetters(para, parameterName));
-          //if (isEnum)
-          //{
-          //  dataclass.Append("public " + "e" + parameterName + " " + "e" + parameterName + ";\r\n");
-          //}
+          
           dataClassSetParametersWithSingleArgsInput.Append(para.Type + " " + parameterName + (i < cmdDef.Parameters.Count - 1 ? ", " : ""));
           dataClassSetParametersWithSingleArgsInputCode.Append("internal" + parameterName + " = " + parameterName + ";\r\n");
           string enumName = "InternalEnums.e" + parameterName;
@@ -421,11 +417,7 @@ namespace TestLibrary
           ParameterDefinition para = cmdDef.ReplyParameters[i];
           string parameterName = formatReplyParameter(para.Discription, "p" + i.ToString(), "");
           bool isEnum = cmdDef.ReplyParameters[i].IsEnum;
-          //if (isEnum)
-          //{
-          //  dataclass.Append("public " + "e" + parameterName + " " + "e" + parameterName + ";\r\n");
-          //}
-
+          
           dataClassGetReplyParametersCode.Append("parameters.Write(internal" + parameterName + ");");
           string enumName = "InternalEnums.e" + parameterName;
           dataClassSetReplyParametersWithParametersCode.Append("internal" + parameterName + " = parameters." + GetParameterReadString(cmdDef.ReplyParameters[i]) + ";\r\n");
@@ -454,8 +446,7 @@ namespace TestLibrary
           dataclass.Append(dataclassConstructorCode);
           dataclass.Append("}\r\n");          
         }
-        //string enumName = "InternalEnums.e" + parameterName;
-        //code.Append("data." + parameterName + "(" + (isEnum ? "(" + enumName + ")" : "") + "parameters." + GetParameterReadString(para) + ");\r\n");
+        
         dataclass.Append("public void SetParameters(" + dataClassSetParametersWithSingleArgsInput + ")\r\n");
         dataclass.Append("{");
         dataclass.Append(dataClassSetParametersWithSingleArgsInputCode);
@@ -526,8 +517,6 @@ namespace TestLibrary
         cmdClass.Append("public event EventHandler<" + classNameArgs + "> Handler;\r\n");
         if (cmdDef.EventType != EventType.NotEvent)
         {
-
-
           // EVENT CALLBACKS START
           System.Text.StringBuilder eventCallback = new System.Text.StringBuilder();
           System.Text.StringBuilder code = new System.Text.StringBuilder();
@@ -541,15 +530,10 @@ namespace TestLibrary
           for (int i = 0; i < cmdDef.Parameters.Count; i++)
           {
             ParameterDefinition para = cmdDef.Parameters[i];
-
-            //bool isEnum = cmdDef.Parameters[i].IsEnum;
-            //string enumName = "InternalEnums.e" + parameterName;
-            //code.Append("data." + parameterName + "(" + (isEnum ? "(" + enumName + ")" : "") + "parameters." + GetParameterReadString(para) + ");\r\n");
             if (cmdDef.Parameters[i].IsEnum)
             {
               string parameterName = formatParameter(para.ToString(), "p" + i.ToString() + "", "");
               cmdClass.Append("public " + "e" + parameterName + " " + "e" + parameterName + ";\r\n");
-              //  code.Append(enumName + " e" + i + " = new " + enumName + "();\r\n");
             }
           }
 
@@ -579,14 +563,9 @@ namespace TestLibrary
           }
 
           code.Append("}");
-          //code.Append("parameters.Position = 0;\r\n");
           code.Append("parameters = args.Data.GetReplyParameters();\r\n");
           for (int i = 0; i < cmdDef.ReplyParameters.Count; i++)
           {
-
-            //code.Append("parameters.Write(args.Data." + parameterName + "());\r\n");
-            //code.Append("parameters.Write((ushort)1);\r\n");
-
             if (cmdDef.ReplyParameters[i].IsEnum)
             {
               string parameterName = formatReplyParameter(cmdDef.ReplyParameters[i].ToString(), "p" + i.ToString() + "", "");
@@ -600,10 +579,7 @@ namespace TestLibrary
           eventCallback.Append(code);
           eventCallback.Append("}");
 
-          
           eventHandlerNames[eventHandlerNameIndex++] = className;
-          
-
           cmdClass.Append(eventCallback);
 
           // EVENT CALLBACKS END
@@ -628,9 +604,6 @@ namespace TestLibrary
           StringBuilder codeParaArray = new StringBuilder();
           StringBuilder codeParaFile = new StringBuilder();
 
-          //codeData.Append("Parameters parameters = new Parameters();\r\n");
-          
-
           string isBlockingPara = ", bool isBlocking = true";
           string passedIsBlockingPara = ", isBlocking";
 
@@ -653,11 +626,6 @@ namespace TestLibrary
             inputParaFile.Append(input);
             inputParaArray.Append(input);
 
-            //codeData.Append("parameters.Write(data." + parameterName + "());\r\n"); 
-
-            //codeParaFile.Append("data." + parameterName + "(" + parameterName + ");\r\n");
-            //codeParaArray.Append("data." + parameterName + "(" + parameterName + ");\r\n");
-
             if (isEnum)
             {
               cmdClass.Append("public " + "e" + parameterName + " " + "e" + parameterName + ";\r\n");
@@ -665,7 +633,6 @@ namespace TestLibrary
           }
           codeParaFile.Append(classDataName + " data = new " + classDataName + "("+ passedInputParaParameters + ");\r\n");
           codeParaArray.Append(classDataName + " data = new " + classDataName + "("+ passedInputParaParameters + ");\r\n"); 
-
           
           //if ((cmdDef.CommandId >= 0x4000) && (cmdDef.CommandId <= 0x5FFF))
           if (cmdDef.CommandType == CommandStatus.BulkReceived)
@@ -732,25 +699,17 @@ namespace TestLibrary
           }
           
           codeData.Append("return data;");
-          // 
-
-
-          //string isBlockingPara = (inputParaArray.Length > 0 ? ", " : "") + "bool isBlocking = true";
-          //string passedIsBlockingPara = (inputParaArray.Length > 0 ? ", " : "") + " isBlocking";
-
+          
           sendDataWrapper.Append("public " + classDataName + " Send");
           sendDataWrapper.Append("(" + inputDataParameters + ")");
           sendDataWrapper.Append("{");
           sendDataWrapper.Append(codeData);
           sendDataWrapper.Append("}");
-
-
+          
           string docStart = "/// <summary>\r\n";
           string doc = "/// Sends a command using its Data class\r\n";
           string docEnd = "/// <summary>\r\n";
           
-
-
           classFunctions.Append(docStart + doc + docEnd);
           classFunctions.Append("public " + className + "." + classDataName + " " + className + cmdName + "(" + className + "." + inputDataParameters + ")");
           classFunctions.Append("{");
@@ -759,7 +718,6 @@ namespace TestLibrary
 
           if (cmdDef.CommandType == CommandStatus.BulkSent || cmdDef.CommandType == CommandStatus.BulkReceived)
           {
-
             string bulkPara;
             string passedBulkPara;
             codeParaFile.Append("data.bulk = new Bulk.Bulk();\r\n");
@@ -772,7 +730,6 @@ namespace TestLibrary
               codeParaArray.Append("return Send(" + passedInputDataParameters  + ");");
               foreach (string s in bulkParameterTypes)
               {
-
                 bulkPara = (inputParaArray.Length > 0 ? ", " : "") + s + "[] bulk";
                 passedBulkPara = (inputParaFile.Length > 0 ? "," : "") + " bulk";
 
@@ -984,7 +941,6 @@ namespace TestLibrary
         );
       }
 
-      
       string cmdDes = "public string[] cmdDescriptions = new string[] {\r\n" + dataclassDescription + "\r\n};";
       string cmdN = "public string[] cmdNames = new string[] {\r\n" + cmdNames + "\r\n};";
       generatedClass.Append(setupEventReceivers.ToString());
@@ -1144,7 +1100,7 @@ namespace TestLibrary
         string parameterName = formatParameter(para.Discription, prefix + "p" + i.ToString() + suffix, ""); // the names prefix and suffix does not make much sense when both are used as prefix together with the paramters number
         string enumName = "e" + parameterName;
         enumDeclarations.Append("public enum " + enumName + ":" + GetParameterType(para) + "{");
-        structCode.Append("public class " + "e" + parameterName/*+ ":" + GetParameterType(para)*/ + "{");
+        structCode.Append("public class " + "e" + parameterName + "{");
         for (int j = 0; j < para.Enums.Count; j++)
         {
           EnumValue e = para.Enums[j];
@@ -1172,15 +1128,11 @@ namespace TestLibrary
           string enumValueName = "e" + j + "" + formatEnum(e.ToString());
           
           structEnumGetters.Append("public static " + para.Type + " " + enumValueName + "(){ return(" + para.Type + ") InternalEnums." + enumName + "." + enumValueName + ";}\r\n");
-          //structEnumDeclarations.Append(enumValueName + " = (" + para.Type + ") " + enumName + "." + enumValueName + ";");
           enumDeclarations.Append(enumValueName + " = " + enumValue + ((j != para.Enums.Count - 1) ? ", " : ""));
         }
         enumDeclarations.Append("}\r\n");
 
         structCode.Append(structEnumGetters);
-        //structCode.Append(enumName + "(){");
-        //structCode.Append(structEnumDeclarations.ToString());
-        //structCode.Append("}\r\n");
         structCode.Append("}\r\n");
       }
       
