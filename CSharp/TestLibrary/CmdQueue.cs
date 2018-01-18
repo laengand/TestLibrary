@@ -17,27 +17,38 @@ namespace TestLibrary
     ConcurrentQueue<CmdEntry> queue;
     bool exitThread = false;
     IStandardCommunication communication;
+    public void Clear()
+    {
+      while (!queue.IsEmpty)
+      {
+        CmdEntry entry;
+        queue.TryDequeue(out entry);
+      }
+    }
     public CmdQueue(IStandardCommunication communication)
     {
       this.communication = communication;
       queue = new ConcurrentQueue<CmdEntry>();
       thread = new Thread(DequeueThread);
-      thread.Start();
     }
     public void Enqueue(CmdEntry entry)
     {
+      if(!thread.IsAlive)
+        thread.Start();
       queue.Enqueue(entry);
       newQueueData.Set();
     }
     void DequeueThread()
     {
-      while(true)
+      while (true)
       {
-        if (!exitThread)
+        if (exitThread || !communication.Connected)
+        {
+          Clear();
           return;
-
+        }
         newQueueData.WaitOne(500, false);
-        while (!queue.IsEmpty)
+        while (!queue.IsEmpty && !exitThread)
         {
           Dequeue();
         }
@@ -45,10 +56,17 @@ namespace TestLibrary
     }
     bool Dequeue()
     {
+      if (!communication.Connected)
+      {
+        Clear();
+        exitThread = true;
+        return false;
+      }
       CmdEntry entry;
       bool rtn = queue.TryDequeue(out entry);
-      if (rtn)
+      if (rtn && communication.Connected)
       {
+
         Parameters replyParameters = entry.Parameters;
         if (entry.CommandType == CommandStatus.BulkSent)
           communication.SendCommand(entry.Id, ref replyParameters, entry.Bulk, entry.BulkLength);

@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using TestLibrary;
+
 namespace TestLibraryConsole
 {
   class Program
@@ -14,9 +16,17 @@ namespace TestLibraryConsole
       string pidFolderPath = @"C:\Users\laad\Documents\Visual Studio 2015\Projects\FirmwareTestTool\PC\code\Output\Debug\Command Definitions";
       string pidFilePath = pidFolderPath + @"\USB, PID " + id.ToString("X4") + ".txt";
       CommunicatorGenerator comGen = new CommunicatorGenerator(id, pidFilePath);
+      Assembly assembly = comGen.assembly;
       
+      Type type = assembly.GetType("TestLibrary.Communicator");
+      object deviceComm = comGen.generatedCommunicator;
+      object reply = type.GetMethod("Connect").Invoke(deviceComm, new object[] { });
+      //MethodInfo method = type.GetMethod( "C0000Ping", new Type[] { typeof(bool) });
+      reply = type.GetMethod("C0000Ping", new Type[] { typeof(bool) }).Invoke(deviceComm, new object[] {false});
+      var input = Console.ReadLine();
+      reply = type.GetMethod("Disconnect").Invoke(deviceComm, new object[] { });
       //comGen.Dispose();
-      
+
     }
   }
 }
