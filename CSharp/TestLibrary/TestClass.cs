@@ -338,8 +338,8 @@ namespace TestLibrary
         string cmdName = className.Remove(0, 5);
         className = className.Substring(0, 5);
 
-        string classInstanceName = cmdDef.EventType == EventType.NotEvent ? cmdName : className;
-        //string classInstanceName = className;
+        //string classInstanceName = cmdDef.EventType == EventType.NotEvent ? cmdName : className;
+        string classInstanceName = className;
 
         classDefinitions.Append((cmdDef.EventType == EventType.NotEvent ? "public " : "public ") + className + "." + className + " " + classInstanceName + ";\r\n");
 
