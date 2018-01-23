@@ -7,25 +7,31 @@ classdef AbstractTest < handle & matlab.mixin.SetGet
 
     methods(Access = public)
         %% Constructer
-        function self = AbstractTest(deviceComm)
+        function self = AbstractTest(deviceComm, defaultCallbackOption)
+            if(nargin < 2) 
+                defaultCallbackOption = '';
+            end
             self.deviceComm = deviceComm;
             
-            % find all events 
-            props = properties(self.deviceComm);
-            allEvents = props(~cellfun(@isempty,regexp(props,'^E\w{4}$'))); % begins with E followed by a 4 symbols word
-            
-            % setup default callback for all events.
-            for n=1:length(allEvents)
-                if(~isempty(self.els))
-                    self.els{end+1} = event.listener(self.deviceComm.(allEvents{n}), 'Handler', @self.LostAndFoundCallback);
-                else
-                    self.els{1} = event.listener(self.deviceComm.(allEvents{n}), 'Handler', @self.LostAndFoundCallback);
-                end;
+            if(strcmpi(defaultCallbackOption,'SetDefaultCallback'))
                 
-                % All events are added but disabled, so an object can be
-                % created but not called before you want to.
-                self.els{end}.Enabled = false;
-            end 
+                % find all events
+                props = properties(self.deviceComm);
+                allEvents = props(~cellfun(@isempty,regexp(props,'^E\w{4}$'))); % begins with E followed by a 4 symbols word
+                
+                % setup default callback for all events.
+                for n=1:length(allEvents)
+                    if(~isempty(self.els))
+                        self.els{end+1} = event.listener(self.deviceComm.(allEvents{n}), 'Handler', @self.LostAndFoundCallback);
+                    else
+                        self.els{1} = event.listener(self.deviceComm.(allEvents{n}), 'Handler', @self.LostAndFoundCallback);
+                    end;
+                    
+                    % All events are added but disabled, so an object can be
+                    % created but not called before you want to.
+                    self.els{end}.Enabled = false;
+                end
+            end
         end
         
         function delete(self)
