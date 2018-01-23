@@ -29,12 +29,15 @@ namespace TestLibrary
     {
       this.communication = communication;
       queue = new ConcurrentQueue<CmdEntry>();
-      thread = new Thread(DequeueThread);
     }
     public void Enqueue(CmdEntry entry)
     {
-      if(!thread.IsAlive)
+      if (thread == null || !thread.IsAlive )
+      {
+        thread = new Thread(DequeueThread);
         thread.Start();
+      }
+        
       queue.Enqueue(entry);
       newQueueData.Set();
     }
