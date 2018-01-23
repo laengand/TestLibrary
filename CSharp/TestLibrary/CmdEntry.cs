@@ -11,7 +11,7 @@ using IA.Common.StandardCommunication.Tools;
 
 namespace TestLibrary
 {
-  public delegate void CmdCallback(ushort id, Parameters parameters, Parameters replyParameters, Stream bulk, int bulkLength);
+  public delegate void CmdCallback(ushort id, Parameters parameters, Parameters replyParameters, Stream bulk, int bulkLength, bool isBlocking);
   public class CmdEntry
   {
     private ushort id;
@@ -19,6 +19,7 @@ namespace TestLibrary
     private Stream bulk;
     private int bulkLength;
     private CmdCallback callback;
+    private bool isBlocking;
     private CommandStatus cmdType;
 
     public ushort Id
@@ -46,7 +47,12 @@ namespace TestLibrary
     {
       get { return cmdType; }
     }
-    public CmdEntry(ushort id, Parameters parameters, Stream bulk, int bulkLength, CmdCallback callback)
+    public bool IsBlocking
+    {
+      get { return isBlocking; }
+    }
+
+    public CmdEntry(ushort id, Parameters parameters, Stream bulk, int bulkLength, CmdCallback callback, bool isBlocking)
     {
       this.id = id;
 
@@ -61,6 +67,7 @@ namespace TestLibrary
       this.bulk = bulk;
       this.bulkLength = bulkLength;
       this.callback = callback;
+      this.isBlocking = isBlocking;
     }
   }
   

@@ -603,6 +603,8 @@ namespace TestLibrary
           StringBuilder codeData = new StringBuilder();
           StringBuilder codeParaArray = new StringBuilder();
           StringBuilder codeParaFile = new StringBuilder();
+          cmdClass.Append("private AutoResetEvent cmdHandled = new AutoResetEvent(false);\r\n");
+          cmdClass.Append("private Data blockingData;\r\n");
 
           string isBlockingPara = ", bool isBlocking = true";
           string passedIsBlockingPara = ", isBlocking";
@@ -641,16 +643,7 @@ namespace TestLibrary
             codeData.Append("{");
             codeData.Append("data.bulk = new Bulk.Bulk();");
             codeData.Append("}");
-            codeData.Append("if(isBlocking)");
-            codeData.Append("{");
-            codeData.Append("communication.SendCommand((UInt16)" + "0x" + cmdDef.CommandId.ToString("X4") + ", ref parameters, data.bulk.GetStream());\r\n");
-            codeData.Append("data.bulk.FromStream(data.bulk.GetStream());\r\n");
-            codeData.Append("}");
-            codeData.Append("else");
-            codeData.Append("{");
-            codeData.Append("TestLibrary.CmdEntry entry = new TestLibrary.CmdEntry((UInt16)" + "0x" + cmdDef.CommandId.ToString("X4") + ", parameters, data.bulk.GetStream(), 0, Callback);\r\n");
-            codeData.Append("cmdQueue.Enqueue(entry);\r\n");
-            codeData.Append("}");
+            codeData.Append("TestLibrary.CmdEntry entry = new TestLibrary.CmdEntry((UInt16)" + "0x" + cmdDef.CommandId.ToString("X4") + ", parameters, data.bulk.GetStream(), 0, Callback, isBlocking);\r\n");
 
           }
           //else if ((cmdDef.CommandId >= 0x8000) && (cmdDef.CommandId <= 0xBFFF))
@@ -660,37 +653,24 @@ namespace TestLibrary
             codeData.Append("{");
             codeData.Append(@"throw new System.InvalidOperationException(@""" + "bulk = null is not allowed when sending bulk data" + @""");");
             codeData.Append("}");
-            codeData.Append("if(isBlocking)");
-            codeData.Append("{");
-            codeData.Append("communication.SendCommand((UInt16)" + "0x" + cmdDef.CommandId.ToString("X4") + ", ref parameters, data.bulk.GetStream(), (int)data.bulk.GetStreamLength());\r\n");
-            codeData.Append("}");
-            codeData.Append("else");
-            codeData.Append("{");
-            codeData.Append("TestLibrary.CmdEntry entry = new TestLibrary.CmdEntry((UInt16)" + "0x" + cmdDef.CommandId.ToString("X4") + ", parameters, data.bulk.GetStream(), (int)data.bulk.GetStreamLength(), Callback);\r\n");
-            codeData.Append("cmdQueue.Enqueue(entry);\r\n");
-            codeData.Append("}");
+            codeData.Append("TestLibrary.CmdEntry entry = new TestLibrary.CmdEntry((UInt16)" + "0x" + cmdDef.CommandId.ToString("X4") + ", parameters, data.bulk.GetStream(), (int)data.bulk.GetStreamLength(), Callback, isBlocking);\r\n");
           }
           else
           {
-            codeData.Append("if(isBlocking)");
-            codeData.Append("{");
-            codeData.Append("communication.SendCommand((UInt16)" + "0x" + cmdDef.CommandId.ToString("X4") + ", ref parameters);\r\n");
-            codeData.Append("}");
-            codeData.Append("else");
-            codeData.Append("{");
-            codeData.Append("TestLibrary.CmdEntry entry = new TestLibrary.CmdEntry((UInt16)" + "0x" + cmdDef.CommandId.ToString("X4") + ", parameters, null, 0, Callback);\r\n");
-            codeData.Append("cmdQueue.Enqueue(entry);\r\n");
-            codeData.Append("}");
+            codeData.Append("TestLibrary.CmdEntry entry = new TestLibrary.CmdEntry((UInt16)" + "0x" + cmdDef.CommandId.ToString("X4") + ", parameters, null, 0, Callback, isBlocking);\r\n");
           }
 
+          codeData.Append("cmdQueue.Enqueue(entry);\r\n");
+          codeData.Append("if(isBlocking)");
+          codeData.Append("{");
+          codeData.Append("cmdHandled.WaitOne();\r\n");
+          codeData.Append("return blockingData;\r\n");
+          codeData.Append("}");
 
           for (int i = 0; i < cmdDef.ReplyParameters.Count; i++)
           {
             string parameterName = formatReplyParameter(cmdDef.ReplyParameters[i].ToString(), "p" + i.ToString(), "");
-
-            string enumName = "InternalEnums.e" + parameterName;
             bool isEnum = cmdDef.ReplyParameters[i].IsEnum;
-            codeData.Append("data." + parameterName + "(" + (isEnum ? "(" + enumName + ")" : "") + "parameters." + GetParameterReadString(cmdDef.ReplyParameters[i]) + ");\r\n");
 
             if (isEnum)
             {
@@ -819,19 +799,22 @@ namespace TestLibrary
           }
           
           cmdClass.Append(sendDataWrapper.ToString() + sendParaFileWrapper.ToString() + sendParaArrayWrapper.ToString());
-          cmdClass.Append("public void Callback(ushort id, Parameters parameters, Parameters replyParameters, Stream bulk, int bulkLength)");
-          cmdClass.Append("{");
-          cmdClass.Append("if (Handler != null)");
+          cmdClass.Append("public void Callback(ushort id, Parameters parameters, Parameters replyParameters, Stream bulk, int bulkLength, bool isBlocking)");
           cmdClass.Append("{");
           cmdClass.Append("Data data = new Data();\r\n");
           cmdClass.Append("data.SetParameters(parameters);\r\n");
           cmdClass.Append("data.SetReplyParameters(replyParameters);\r\n");
-
           if (cmdDef.CommandType == CommandStatus.BulkReceived)
           {
-            cmdClass.Append("data.bulk.FromStream(bulk);\r\n");
+            cmdClass.Append("data.bulk = new Bulk.Bulk(bulk);\r\n");
           }
-          
+          cmdClass.Append("if(isBlocking)");
+          cmdClass.Append("{");
+          cmdClass.Append("blockingData = data;\r\n");
+          cmdClass.Append("cmdHandled.Set();\r\n");
+          cmdClass.Append("}");
+          cmdClass.Append("else if (Handler != null)");
+          cmdClass.Append("{");
           cmdClass.Append("Args args = new Args(data);\r\n");
           cmdClass.Append("Handler.Invoke(this, args);\r\n");
           cmdClass.Append("}");

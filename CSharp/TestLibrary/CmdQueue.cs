@@ -74,8 +74,8 @@ namespace TestLibrary
           communication.SendCommand(entry.Id, ref replyParameters, entry.Bulk);
         else
           communication.SendCommand(entry.Id, ref replyParameters);
-
-        entry.Callback(entry.Id, entry.Parameters, replyParameters, entry.Bulk, entry.BulkLength);
+        
+        entry.Callback(entry.Id, entry.Parameters, replyParameters, entry.Bulk, entry.BulkLength, entry.IsBlocking);
       }
       return rtn;
     }
