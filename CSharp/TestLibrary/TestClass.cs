@@ -374,14 +374,22 @@ namespace TestLibrary
 
         // DATA SETTERS AND GETTERS START
 
+        dataclassConstructorCode.Append("id = 0x" + cmdDef.CommandId.ToString("X4") + ";\r\n");
         dataclassConstructorCode.Append("SetParameters(");
+        dataclassDefaultConstructorCode.Append("id = 0x" + cmdDef.CommandId.ToString("X4") + ";\r\n");
         dataclassDefaultConstructorCode.Append("SetParameters(");
         dataClassSetParametersWithParametersInput.Append("Parameters parameters");
         dataClassSetParametersWithParametersCode.Append("parameters.Position = 0;\r\n");
 
         
         dataClassGetParametersCode.Append("Parameters parameters = new Parameters();\r\n");
-        
+        dataclass.Append("private UInt16 id; \r\n");
+        dataclass.Append("public UInt16 Id \r\n");
+        dataclass.Append("{");
+        dataclass.Append("set{ id = value;}\r\n");
+        dataclass.Append("get{ return id;}");
+        dataclass.Append("}\r\n");
+
         for (int i = 0; i < cmdDef.Parameters.Count; i++)
         {
           ParameterDefinition para = cmdDef.Parameters[i];
@@ -526,6 +534,7 @@ namespace TestLibrary
           cmdClass.Append("public void eventIsHandled(){eventHandled.Set();}\r\n");
           
           code.Append(classDataName + " data = new " + classDataName + "();\r\n");
+          code.Append("data.Id = id;\r\n");
           code.Append("data.SetParameters(parameters);\r\n");
           for (int i = 0; i < cmdDef.Parameters.Count; i++)
           {
@@ -574,7 +583,7 @@ namespace TestLibrary
             }
           }
           string onEvent = "OnEvent";
-          eventCallback.Append("public void " + onEvent + "(UInt16 command, ref Parameters parameters, Stream bulk, int bulkLength)");
+          eventCallback.Append("public void " + onEvent + "(UInt16 id, ref Parameters parameters, Stream bulk, int bulkLength)");
           eventCallback.Append("{");
           eventCallback.Append(code);
           eventCallback.Append("}");
@@ -643,7 +652,7 @@ namespace TestLibrary
             codeData.Append("{");
             codeData.Append("data.bulk = new Bulk.Bulk();");
             codeData.Append("}");
-            codeData.Append("TestLibrary.CmdEntry entry = new TestLibrary.CmdEntry((UInt16)" + "0x" + cmdDef.CommandId.ToString("X4") + ", parameters, data.bulk.GetStream(), 0, Callback, isBlocking);\r\n");
+            codeData.Append("TestLibrary.CmdEntry entry = new TestLibrary.CmdEntry(data.Id, parameters, data.bulk.GetStream(), 0, Callback, isBlocking);\r\n");
 
           }
           //else if ((cmdDef.CommandId >= 0x8000) && (cmdDef.CommandId <= 0xBFFF))
@@ -653,17 +662,21 @@ namespace TestLibrary
             codeData.Append("{");
             codeData.Append(@"throw new System.InvalidOperationException(@""" + "bulk = null is not allowed when sending bulk data" + @""");");
             codeData.Append("}");
-            codeData.Append("TestLibrary.CmdEntry entry = new TestLibrary.CmdEntry((UInt16)" + "0x" + cmdDef.CommandId.ToString("X4") + ", parameters, data.bulk.GetStream(), (int)data.bulk.GetStreamLength(), Callback, isBlocking);\r\n");
+            codeData.Append("TestLibrary.CmdEntry entry = new TestLibrary.CmdEntry(data.Id, parameters, data.bulk.GetStream(), (int)data.bulk.GetStreamLength(), Callback, isBlocking);\r\n");
           }
           else
           {
-            codeData.Append("TestLibrary.CmdEntry entry = new TestLibrary.CmdEntry((UInt16)" + "0x" + cmdDef.CommandId.ToString("X4") + ", parameters, null, 0, Callback, isBlocking);\r\n");
+            codeData.Append("TestLibrary.CmdEntry entry = new TestLibrary.CmdEntry(data.Id, parameters, null, 0, Callback, isBlocking);\r\n");
           }
 
           codeData.Append("cmdQueue.Enqueue(entry);\r\n");
           codeData.Append("if(isBlocking)");
           codeData.Append("{");
           codeData.Append("cmdHandled.WaitOne();\r\n");
+          codeData.Append("if(cmdQueue.LatestException != null)\r\n");
+          codeData.Append("{");
+          codeData.Append("throw cmdQueue.LatestException; ");
+          codeData.Append("}");
           codeData.Append("return blockingData;\r\n");
           codeData.Append("}");
 
@@ -802,6 +815,7 @@ namespace TestLibrary
           cmdClass.Append("public void Callback(ushort id, Parameters parameters, Parameters replyParameters, Stream bulk, int bulkLength, bool isBlocking)");
           cmdClass.Append("{");
           cmdClass.Append("Data data = new Data();\r\n");
+          cmdClass.Append("data.Id = id;\r\n");
           cmdClass.Append("data.SetParameters(parameters);\r\n");
           cmdClass.Append("data.SetReplyParameters(replyParameters);\r\n");
           if (cmdDef.CommandType == CommandStatus.BulkReceived)

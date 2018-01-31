@@ -21,6 +21,7 @@ namespace TestLibraryConsole
       TestLibrary.Communicator deviceComm = new TestLibrary.Communicator(id, pidFile);
       deviceComm.Connect();
       deviceComm.C0000Ping();
+      deviceComm.C0013RequestAccessoryStatusNr();
       deviceComm.C4F06RequestBoardCalibrationData();
       deviceComm.Disconnect();
       if (false)
