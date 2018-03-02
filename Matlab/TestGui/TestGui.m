@@ -85,7 +85,7 @@ function figure1_CloseRequestFcn(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hint: delete(hObject) closes the figure
-if(isvalid(handles.testRunner))
+if(~isempty(handles) && isvalid(handles.testRunner))
     delete(handles.testRunner);
 end
 delete(hObject);

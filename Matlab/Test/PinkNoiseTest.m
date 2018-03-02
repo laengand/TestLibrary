@@ -39,6 +39,7 @@ function [tf, chList, fig] = PinkNoiseTest(tolerance, fLow, fHigh, x, y, figureV
     
     if(abs(y(window)-yRef(window)) < tolerance)
         chList.slopeValid = true;
+        tf = true;
     end
 end
 

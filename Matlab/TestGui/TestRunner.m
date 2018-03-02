@@ -12,16 +12,19 @@ classdef TestRunner < handle
         lockedIdx;
         idxCounter = 1;
         testListBox;
-        
+        jUITable;
+        tableSelectSingleton = 0;
         openTestPushtool;
         startContPushtool
         stopPushtool;
         testCollectionText;
+        selectAllCheckBox;
         
         startIcon;
         stopIcon;
         continueIcon;
         openTestIcon;
+        hObject;
         stateOld;
         stateNew;
         stateTimer;
@@ -30,6 +33,13 @@ classdef TestRunner < handle
         startContState = 'start';
     end
     
+    properties(Access = private, Constant)
+        COLUMN_TESTSELECTION = 1;
+        COLUMN_NAME = 2;
+        COLUMN_DATE = 3;
+        COLUMN_RESULT = 4;
+        COLUMN_NUMBER_OF_COLUMNS = 4;
+    end
     methods(Access = private)
         function stateLoop(self, ~, ~)
             try
@@ -88,7 +98,6 @@ classdef TestRunner < handle
             self.startContPushtool.TooltipString = 'Start';
             self.stopPushtool.Enable = 'off';
             self.testListBox.Enable = 'on';
-            
         end
         
         function ContinuePushtoolCallback(self, ~, ~, ~)
@@ -108,9 +117,22 @@ classdef TestRunner < handle
             end
         end
         
+        function SelectAllCheckBoxCallback(self, ~, ~, ~)
+            if(~isempty(self.testListBox.Data))
+                self.testListBox.Data(:,1) = {logical(self.selectAllCheckBox.Value)};
+                self.TestListboxCallback();
+            end
+        end
+        
         function TestListboxCallback(self, ~, ~, ~)
+            if self.stateOld ~= TestRunnerState.IDLE
+                return
+            end
+            if(~all(cell2mat(self.testListBox.Data(:, 1))))
+                self.selectAllCheckBox.Value = false;
+            end
+            idxNew = find(cell2mat(self.testListBox.Data(:, self.COLUMN_TESTSELECTION)));
             
-            idxNew = self.testListBox.Value;
             if(isempty(idxNew))
                 if(~isempty(self.testCollectionIndices))
                     self.UiTeardown(self.testCollectionIndices);
@@ -127,9 +149,9 @@ classdef TestRunner < handle
                 self.UiSetup(diffIdx);
                 
             elseif numel(idxNew) < numel(self.testCollectionIndices)
-                diffIdx = setdiff(self.testCollectionIndices,idxNew);
+                diffIdx = setdiff(self.testCollectionIndices, idxNew);
                 self.UiTeardown(diffIdx);
-                diffIdx = setdiff(idxNew,self.testCollectionIndices);
+                diffIdx = setdiff(idxNew, self.testCollectionIndices);
                 self.UiSetup(diffIdx);
                 
             else % numel(idxNew) == numel(idxOld)
@@ -141,11 +163,11 @@ classdef TestRunner < handle
             end
             
             self.testCollectionIndices = idxNew;
-            
+            self.tableSelectSingleton = false;
         end
         
         function OpenTestPushtoolClickedCallback(self, ~, ~, ~)
-            self.LoadTestCollection
+            self.LoadTestCollection();
         end
         
         function StartTest(self, ~, ~)
@@ -158,22 +180,22 @@ classdef TestRunner < handle
         
         function SetupTest(self)
             self.statePhaseLog.setup = true;
-            self.testCollection.GetTestCase(self.currentIdx).Setup;
+            self.testCollection.GetTestCase(self.currentIdx).Setup();
         end
         
         function ExerciseTest(self)
             self.statePhaseLog.exercise = true;
-            self.testCollection.GetTestCase(self.currentIdx).Exercise;
+            self.testCollection.GetTestCase(self.currentIdx).Exercise();
         end
         
         function VerifyTest(self)
             self.statePhaseLog.verify = true;
-            self.testCollection.GetTestCase(self.currentIdx).Verify;
+            self.testCollection.GetTestCase(self.currentIdx).Verify();
         end
         
         function TeardownTest(self)
             self.statePhaseLog.teardown = true;
-            self.testCollection.GetTestCase(self.currentIdx).Teardown;
+            self.testCollection.GetTestCase(self.currentIdx).Teardown();
         end
                 
         function StopTest(self, ~, ~)
@@ -182,7 +204,6 @@ classdef TestRunner < handle
                 self.TeardownTest;
             end
             self.ClearStatePhaseLog;
-            %             cellfun(@(t) t.Teardown, testCaseList(self.testCollectionIndices(self.idxCounter:end)));
             self.idxCounter = 1;
             self.stateNew = TestRunnerState.IDLE;
         end
@@ -214,11 +235,49 @@ classdef TestRunner < handle
             self.stateTimer.Name = [mfilename 'Timer'];
             self.stateTimer.ExecutionMode = 'fixedSpacing';
             self.stateTimer.BusyMode = 'queue';
+            
+            %% 
+            
+            %%
             if(nargin == 1)
-                self.testListBox = findobj(hObject,'tag', 'testListbox');
-                self.testListBox.Callback = @self.TestListboxCallback;
-                self.testListBox.Max = 2;
-                self.testListBox.Value = [];
+                self.hObject = hObject;
+                
+                
+                self.testCollectionText = findobj(hObject,'tag','testCollectionText');
+                self.testCollectionText.String = 'No test collection';
+                
+                if(0)
+                    self.testListBox = findobj(hObject,'tag', 'testListbox');
+                    self.testListBox.Callback = @self.TestListboxCallback;
+                    self.testListBox.Max = 2;
+                    self.testListBox.Value = [];
+                else
+                    height = hObject.Position(4);
+                    self.testListBox = uitable(...
+                    'ColumnName', {'' 'Name' 'Latest test' 'Result'},...
+                    'ColumnEditable',[true false false false]...
+                    );
+                    
+                    self.testListBox.ColumnWidth = {20 150 110 50};
+%                     self.testListBox.CellSelectionCallback = @self.TestListboxCallback;
+                    self.testListBox.CellEditCallback = @self.TestListboxCallback;
+                    self.testListBox.Interruptible = 'off';
+                end
+                
+                self.testListBox.Position = [1 0 self.testListBox.Extent(3) height-self.testCollectionText.Position(4)] ;
+              
+                self.selectAllCheckBox = uicontrol(...
+                'style','checkbox',...
+                'position',[self.testListBox.Position(1)+(self.testListBox.Position(3)-sum(cell2mat(self.testListBox.ColumnWidth))) self.testCollectionText.Position(2) 15 self.testCollectionText.Position(4)],...
+                'callback', @self.SelectAllCheckBoxCallback...
+                );
+            
+            
+                hObject.Position(3) = self.testListBox.Extent(3)-3;
+                self.testCollectionText.Position(1) =  self.hObject.Position(3)/2-self.testCollectionText.Position(3)/2;
+               
+                jUIScrollPane = findjobj(self.testListBox);
+                self.jUITable = jUIScrollPane.getViewport.getView;
                 
                 self.openTestIcon = load('openTestIcon.mat');
                 self.openTestIcon = self.openTestIcon.mat;
@@ -243,8 +302,7 @@ classdef TestRunner < handle
                 self.startContPushtool.ClickedCallback = @self.StartContPushtoolCallback; 
                 self.startContPushtool.CData = self.startIcon;
                                 
-                self.testCollectionText = findobj(hObject,'tag','testCollectionText');
-                self.testCollectionText.String= 'No test collection';
+                
             end
             
             start(self.stateTimer);
@@ -313,6 +371,7 @@ classdef TestRunner < handle
         function NotifyTeardownDone(self)
             if(self.stateNew ~= TestRunnerState.STOP)
                 self.idxCounter = self.idxCounter + 1;
+                self.UpdateResult(self.currentIdx);
                 if(self.idxCounter <= numel(self.testCollectionIndices))
                     self.currentIdx = self.testCollectionIndices(self.idxCounter);
                     self.ClearStatePhaseLog;
@@ -325,6 +384,11 @@ classdef TestRunner < handle
                     self.startContPushtool.CData = self.startIcon;
                     self.startContPushtool.TooltipString = 'Start';
                     self.stateNew = TestRunnerState.IDLE;
+                    for i=1:numel(self.testCollectionIndices)
+                        if(~self.jUITable.isCellSelected(self.testCollectionIndices(i),0))
+                            self.jUITable.changeSelection(self.testCollectionIndices(i)-1,0,true,false)
+                        end   
+                    end
                 end
             end
             self.ClearStatePhaseLog;
@@ -339,11 +403,57 @@ classdef TestRunner < handle
         end
         
         function UiTeardown(self, idx)
-            testCaseList = self.testCollection.GetTestCaseList;
-            cellfun(@(t) t.UiTeardown, testCaseList(idx));
+            if ~isempty(idx)
+                testCaseList = self.testCollection.GetTestCaseList;
+                cellfun(@(t) t.UiTeardown, testCaseList(idx));
+            end
         end
         
+        function coloredStr = SetBackground(self, str, color)
+            coloredStr = ['<HTML><table border=0 width=400 bgcolor=' color '><TR><TD>' str '</TD></TR> </table></HTML>'];
+%             coloredStr = ['<span style="background-color:' color '">' str '</span>'];
+        end
         
+        function UpdateResult(self, idx)
+            folder = self.testCollection.GetTestCase(idx).GetResultFolder();
+            folderInfo = dir(folder);
+            self.testListBox.Data(idx,self.COLUMN_DATE) = {''};
+            self.testListBox.Data(idx,self.COLUMN_RESULT) = {self.SetBackground('','gray')};
+            
+            if ~isempty(folderInfo)
+                [~,latestResultFolderIdx] = max([folderInfo(3:end).datenum]);
+                latestResultFolderIdx = latestResultFolderIdx+2; % account for . and .. in folder structure
+                
+                while (latestResultFolderIdx > 0)
+                    latestResultFolderInfo = folderInfo(latestResultFolderIdx);
+                    latestResultFolderFiles = dir([folder filesep latestResultFolderInfo.name]);
+                    
+                    if any(strcmpi({latestResultFolderFiles.name},'result.mat'))
+                        result = load([folder filesep latestResultFolderInfo.name filesep 'result.mat']);
+                    else
+                        latestResultFolderIdx = latestResultFolderIdx - 1;
+                        continue;
+                    end
+                    
+                    if isfield(result,'Result')
+                        result = result.Result;
+                    elseif isfield(result,'result')
+                        result = result.result;
+                    else
+                        latestResultFolderIdx = latestResultFolderIdx - 1;
+                        continue;
+                    end
+                    
+                    self.testListBox.Data(idx, self.COLUMN_DATE) = {latestResultFolderInfo.date};
+                    if(result.passed)
+                        self.testListBox.Data(idx, self.COLUMN_RESULT) = {self.SetBackground('','green')};
+                    else
+                        self.testListBox.Data(idx, self.COLUMN_RESULT) = {self.SetBackground('','red')};
+                    end
+                    break;
+                end
+            end
+        end
         function LoadTestCollection(self, fileName)
             pathName = '';
             if(nargin == 1)
@@ -373,11 +483,26 @@ classdef TestRunner < handle
                     self.testCollection = temp;
                     self.testCollectionText.String = name;
                     if(~isempty(self.testListBox))
-                        self.testListBox.Value = [];
-                        self.testListBox.String = cellfun(@(t) t.GetName, self.testCollection.GetTestCaseList, 'UniformOutput', false);
+                        temp = cellfun(@(t) t.GetName, self.testCollection.GetTestCaseList(), 'UniformOutput', false);
+                        self.testListBox.Data = cell(numel(temp),self.COLUMN_NUMBER_OF_COLUMNS);
+                        self.testListBox.Data(:,self.COLUMN_TESTSELECTION) = {false};
+                        self.testListBox.Data(:,self.COLUMN_NAME) = temp;
+                        
+                        for i=1:numel(temp)
+                            self.UpdateResult(i);
+                        end
+                        
+                        self.hObject.Position(3) = self.testListBox.Extent(3)+15;
+                        self.testListBox.Position(3) = self.testListBox.Extent(3)+15;
+                        self.testCollectionText.Position(1) =  self.hObject.Position(3)/2-self.testCollectionText.Position(3)/2;
+                        
+                        columnWidth = cell2mat(self.testListBox.ColumnWidth);
+                        jUIScrollPane = findjobj(self.testListBox);
+                        idxColumnWidth = jUIScrollPane.getComponent(4).getComponent(0).getWidth();
+                        
+                        self.selectAllCheckBox.Position(1) = idxColumnWidth + (columnWidth(1)/2-self.selectAllCheckBox.Position(3)/2) +2;
                     end
                 end
-                
             end
         end
     end

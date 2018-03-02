@@ -20,7 +20,7 @@ namespace TestLibrary
     IStandardCommunication communication;
     public Exception LatestException
     {
-      get{ return latestException; }
+      get { return latestException; }
     }
     public void Clear()
     {
@@ -42,7 +42,7 @@ namespace TestLibrary
         thread = new Thread(DequeueThread);
         thread.Start();
       }
-        
+
       queue.Enqueue(entry);
       newQueueData.Set();
     }

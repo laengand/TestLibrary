@@ -31,12 +31,18 @@ function xLevelList = FindLevel(x, y, yLevel)
     
     for i = 1:length(idx)-1
         if(idx(i) ~= idx(i+1))
-            xPol = x(i-1:i+2);
-            yPol = y(i-1:i+2);
-            
             id = 'MATLAB:polyfit:RepeatedPointsOrRescale'; % supress warning
             warning('off',id)
-            pfit = polyfit(xPol,yPol,3);
+            if(i == 1)
+                xPol = x(i:i+2);
+                yPol = y(i:i+2);
+                pfit = polyfit(xPol,yPol,2);
+            else
+                xPol = x(i-1:i+2);
+                yPol = y(i-1:i+2);
+                pfit = polyfit(xPol,yPol,3);
+            end
+            
             warning('on',id)
             
             % y = ax^3 + bx^2 + cx + d

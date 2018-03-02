@@ -25,7 +25,9 @@ classdef TestCollection < handle
         function testCase = GetTestCase(self, idx)
             testCase = self.testCaseList{idx};
         end
-        
+        function delete(self)
+            cellfun(@(t) delete(t), self.testCaseList);
+        end
     end
     
 end
