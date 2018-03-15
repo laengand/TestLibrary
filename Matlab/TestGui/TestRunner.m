@@ -429,7 +429,7 @@ classdef TestRunner < handle
                     latestResultFolderFiles = dir([folder filesep latestResultFolderInfo.name]);
                     
                     if any(strcmpi({latestResultFolderFiles.name},'result.mat'))
-                        result = load([folder filesep latestResultFolderInfo.name filesep 'result.mat']);
+                        result = load([folder filesep latestResultFolderInfo.name filesep 'result.mat'], '-regexp', '(?i)result');
                     else
                         latestResultFolderIdx = latestResultFolderIdx - 1;
                         continue;
