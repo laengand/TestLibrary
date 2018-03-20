@@ -5,7 +5,8 @@ function [tf, chList, fig] = SpeechNoiseTest(tolerance, fFlatLow, fFlatHigh, fSl
     fig = figure('Visible', figureVisibleOption);
     try
         windowFlat = x >= fFlatLow & x <= fFlatHigh;
-        len = length(x(windowFlat));
+        windowSlope = x >= fSlopeLow & x <= fSlopeHigh;
+        len = length(x(windowFlat | windowSlope));
         yRef(1:len) = 0;
         
         y1 = 0;
@@ -13,15 +14,16 @@ function [tf, chList, fig] = SpeechNoiseTest(tolerance, fFlatLow, fFlatHigh, fSl
         
         x1 = fSlopeLow;
         x2 = fSlopeLow*2;
-        windowSlope = x >= fSlopeLow & x <=fSlopeHigh;
-        yRef(len+1:len + length(x(windowSlope))) = LogInterpolate(x(windowSlope), x1, x2, [], y1, y2);
+        
         xRef = x(windowFlat | windowSlope);
         
         if(size(y) ~= size(yRef))
             yRef = yRef.';
             xRef = xRef.';
         end
-       
+
+        yRef(end-length(x(windowSlope))+1:end) = LogInterpolate(x(windowSlope), x1, x2, [], y1, y2);
+        
         lineFft = semilogx(x, y);
         title('Speech Noise')
         xlabel('Hz')

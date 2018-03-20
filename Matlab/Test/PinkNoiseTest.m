@@ -33,9 +33,9 @@ function [tf, chList, fig] = PinkNoiseTest(tolerance, fLow, fHigh, x, y, figureV
     %% fit the reference curve to the dataset
     yOffset = CurveFit(x, y, x(window), yRef(window));
     yRef = yRef + yOffset;
-    line(lineFft.Parent, x, yRef + tolerance, 'Color','r');
-    line(lineFft.Parent, x, yRef - tolerance, 'Color','r');
-    line(lineFft.Parent, x, yRef, 'Color','r');
+    line(lineFft.Parent, x(window), yRef(window) + tolerance, 'Color','r');
+    line(lineFft.Parent, x(window), yRef(window) - tolerance, 'Color','r');
+    line(lineFft.Parent, x(window), yRef(window), 'Color','r');
     
     if(abs(y(window)-yRef(window)) < tolerance)
         chList.slopeValid = true;

@@ -46,9 +46,7 @@ function [tf, chList, fig] = NarrowbandNoiseTest (fm, x, y, figureVisibleOption)
         ylabel('dB')
         numData = length(x(x > fcLowerMin & x < fcUpperMax));
 
-        % smoothing window width is 2^(1% of data points within the fc limits, fcLowerMin and fcUpperMax)
-        % no mathematical proof of why this is a good window size 
-        span = 2^ceil(numData*0.01); % span should be odd
+        span = numData*0.5; % span should be odd
         if(span == 1)
             span = 3;
         elseif rem(span,2) == 0     % if not odd, add 1
@@ -120,7 +118,7 @@ function [tf, chList, fig] = NarrowbandNoiseTest (fm, x, y, figureVisibleOption)
         ocYLower = LogInterpolate(ocXLower, f1, f2, [], y1, y2);
         ocYLowerData = y(ocXLowerIdx);
         
-        if(all(ocYLowerData <= ocYLower))
+        if(all(round(ocYLowerData,10) <= round(ocYLower, 10)))
             chList.lowerSlopeValid = true;
         end
         validPoints = ocYLowerData < ocYLower;
@@ -145,7 +143,7 @@ function [tf, chList, fig] = NarrowbandNoiseTest (fm, x, y, figureVisibleOption)
         line(ocXUpper(validPoints), ocYUpperData(validPoints), 'Color', 'green', 'LineWidth', 2);
         line(ocXUpper(~validPoints), ocYUpperData(~validPoints), 'Color', 'red', 'LineWidth', 2);
 
-        if(all(y(ocXUpperIdx) <= ocYUpper))
+        if(all(round(ocYUpperData, 10) <= round(ocYUpper, 10)))
             chList.upperSlopeValid = true;
         end
         

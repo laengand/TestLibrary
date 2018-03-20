@@ -36,21 +36,6 @@ function [tf, chList, fig] = PediatricNoiseTest(fm, x, y, figureVisibleOption)
         xlabel('Hz')
         ylabel('dB')
         
-        hold(ph.Parent, 'on');
-        
-        [yMax, yMaxIdx ] = max(y);
-        yMin = min(y);
-        f3dB = FindLevel(x,y,yMax-3);
-        
-        
-        % draw the determined cut-off frequencies
-        for i = 1:length(f3dB)
-            line(f3dB(i),yMax-3,'marker','.', 'color','r')
-            line(ph.Parent, [f3dB(i) f3dB(i)], [yMin, yMax], 'Color', 'black');
-            text(ph.Parent, double(f3dB(i)), double(yMax), ['f_' num2str(i)]);
-        end
-        f1 = f3dB(1);
-        f2 = f3dB(2);
         freq = [    80,  125,  160,  200,  250,   315,  400,  500,   630,  750,    800, 1000,  1250, 1500,  1600, 2000,   2500, 3000,   3150, 4000, 5000, 6000, 6300, 8000, 9000, 10000, 11200, 12500, 14000, 16000];
         bwPct = [ 0.29, 0.29, 0.29, 0.29, 0.29, 0.277, 0.26, 0.24, 0.219, 0.20, 0.1944, 0.17, 0.149, 0.13, 0.126, 0.11, 0.0984, 0.09, 0.0886, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08,  0.08,  0.08,  0.08,  0.08,  0.08];
         
@@ -79,14 +64,56 @@ function [tf, chList, fig] = PediatricNoiseTest(fm, x, y, figureVisibleOption)
         f1Max = froot(1)*(1+tolerance); % Maxmum value for the lower cut-off frequency
         f2Min = froot(2)*(1-tolerance); % Minimum value for the upper cut-off frequency
         f2Max = froot(2)*(1+tolerance); % Maximum value for the upper cut-off frequency
+                
+        numData = length(x(x > f1Min & x < f2Max));
+
+        % smoothing window width is 2^(1% of data points within the fc limits, fcLowerMin and fcUpperMax)
+        % no mathematical proof of why this is a good window size 
+%         span = 2^ceil(numData*0.01); % span should be odd
+        span = numData*0.25; % span should be odd
+        if(span == 1)
+            span = 3;
+        elseif rem(span,2) == 0     % if not odd, add 1
+            span = span + 1;
+        end
         
+        % smooth the data set 
+        y = smooth(y, span);
+        
+        % Note: The smoothing command returns a column vector no matter if 
+        % the input is a row or column vector. We change the y vectors 
+        % dimensions to match the x vector
+        
+        yRow = size(y);
+        xRow = size(x);
+        
+        if(yRow ~= xRow)
+            y = y.';
+        end
+        
+        hold(ph.Parent, 'on');
+        % draw the smoothed line
+        line(x, y, 'Color', 'black', 'LineWidth', 2);
+        
+        [yMax, yMaxIdx ] = max(y);
+        yMin = min(y);
+        f3dB = FindLevel(x,y,yMax-3);
+        
+        
+        % draw the determined cut-off frequencies
+        for i = 1:length(f3dB)
+            line(f3dB(i),yMax-3,'marker','.', 'color','r')
+            line(ph.Parent, [f3dB(i) f3dB(i)], [yMin, yMax], 'Color', 'black');
+            text(ph.Parent, double(f3dB(i)), double(yMax), ['f_' num2str(i)]);
+        end
+        f1 = f3dB(1);
+        f2 = f3dB(2);
+
         % draw the band limits
         line(ph.Parent, [f1Min f1Min], [yMin yMax], 'Color', 'red');
         line(ph.Parent, [f1Max f1Max], [yMin yMax], 'Color', 'red');
         line(ph.Parent, [f2Min f2Min], [yMin yMax], 'Color', 'red');
         line(ph.Parent, [f2Max f2Max], [yMin yMax], 'Color', 'red');
-        
-        
         
         % validate the the cut-off frequecies
         if(f1 >= f1Min && f1 <= f1Max)

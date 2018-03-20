@@ -1,5 +1,6 @@
 function [tf, chList, fig] = BroadbandNoiseTest(x, y, figureVisibleOption)
     %% BroadbandNoiseTest
+    % ANSI S3.42-1992
     
     tf = false;
     chList.shapeValid = false;

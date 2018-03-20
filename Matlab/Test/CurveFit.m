@@ -1,6 +1,6 @@
 function [yOffset, e] = CurveFit(x, y, xRef, yRef)
     %% CurveFit
-    % This function attempt to will fit a reference curve [xRef,yRef] to a
+    % This function attempt to fit a reference curve [xRef,yRef] to a
     % dataset [x,y], by sweeping the reference curve along the y-axis. The
     % function assumes that x and xRef have the same resolution, and that
     % they contain overlapping values
