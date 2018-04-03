@@ -18,12 +18,12 @@ namespace TestLibraryConsole
       string pidFilePath = pidFolderPath + @"\USB, PID " + id.ToString("X4") + ".txt";
       string pidFile = File.ReadAllText(pidFilePath);
       CommunicatorGenerator comGen = new CommunicatorGenerator(id, pidFilePath);
-      TestLibrary.Communicator deviceComm = new TestLibrary.Communicator(id, pidFile);
-      deviceComm.Connect();
-      deviceComm.C0000Ping();
-      deviceComm.C0013RequestAccessoryStatusNr();
-      deviceComm.C4F06RequestBoardCalibrationData();
-      deviceComm.Disconnect();
+      //TestLibrary.Communicator deviceComm = new TestLibrary.Communicator(id, pidFile);
+      //deviceComm.Connect();
+      //deviceComm.C0000Ping();
+      //deviceComm.C0013RequestAccessoryStatusNr();
+      //deviceComm.C4F06RequestBoardCalibrationData();
+      //deviceComm.Disconnect();
       if (false)
       {
         //CommunicatorGenerator comGen = new CommunicatorGenerator(id, pidFilePath);

@@ -672,12 +672,14 @@ namespace TestLibrary
           codeData.Append("cmdQueue.Enqueue(entry);\r\n");
           codeData.Append("if(isBlocking)");
           codeData.Append("{");
-          codeData.Append("cmdHandled.WaitOne();\r\n");
-          codeData.Append("if(cmdQueue.LatestException != null)\r\n");
-          codeData.Append("{");
-          codeData.Append("throw cmdQueue.LatestException; ");
-          codeData.Append("}");
-          codeData.Append("return blockingData;\r\n");
+            codeData.Append("if(cmdHandled.WaitOne(2500))\r\n");
+            codeData.Append("{");
+              codeData.Append("if(cmdQueue.LatestException != null)\r\n");
+              codeData.Append("{");
+                codeData.Append("throw cmdQueue.LatestException; ");
+              codeData.Append("}");
+            codeData.Append("return blockingData;\r\n");
+            codeData.Append("}");
           codeData.Append("}");
 
           for (int i = 0; i < cmdDef.ReplyParameters.Count; i++)
