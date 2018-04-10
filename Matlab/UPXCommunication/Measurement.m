@@ -422,8 +422,10 @@ classdef Measurement < handle
             end
             self.tm.ExecutionMode = 'fixedRate';
             
+            msgId = 'MATLAB:TIMER:RATEPRECISION'; % suppress warning: Period property is limited to 1 millisecond precision.  Sub-millisecond precision will be ignored.
+            warnStruct = warning('off', msgId);
             self.tm.Period = period;
-            
+            warning(warnStruct);
             
             self.tm.BusyMode = 'queue';
             self.tm.UserData = self;
