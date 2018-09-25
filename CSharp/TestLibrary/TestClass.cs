@@ -61,19 +61,16 @@ namespace TestLibrary
       para.OutputAssembly = appPath + @"\GeneratedCommunicator0x" + id.ToString("X4") + ".dll";
       
       string code = CreateClasses(ref interpreter);
+#if DEBUG 
       string debugFile = appPath + @"\debugFile.cs";
       File.WriteAllText(debugFile, code);
-
-
-      //Command cmd = _applicationObject.Commands.Item("Edit.FormatDocument", -1);
-      //object dummy = null;
-      //_applicationObject.Commands.Raise(cmd.Guid, cmd.ID, ref dummy, ref dummy);
-      //string[] files = { Path.Combine(Directory.GetCurrentDirectory(), @"CmdEntry.cs") , debugFile};
+#endif
+      
       CompilerResults results = null;
       if (!File.Exists(para.OutputAssembly))
       {
-        //results = provider.CompileAssemblyFromSource(para, code);
-        results = provider.CompileAssemblyFromFile(para, debugFile);
+        results = provider.CompileAssemblyFromSource(para, code);
+        //results = provider.CompileAssemblyFromFile(para, debugFile);
         if (results.Errors.HasErrors || results.Errors.HasWarnings)
         {
           System.Text.StringBuilder errors = new System.Text.StringBuilder();

@@ -60,11 +60,11 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>if exist "$(SolutionDir)\..\Matlab\DotNetLibrary" xcopy /Y /D "$(TargetDir)$(ProjectName).dll" "$(SolutionDir)\..\Matlab\DotNetLibrary"
-if exist "$(SolutionDir)\..\Matlab\DotNetLibrary" xcopy /Y /D "$(TargetDir)CommonTools.dll" "$(SolutionDir)\..\Matlab\DotNetLibrary"
-if exist "$(SolutionDir)\..\Matlab\DotNetLibrary" xcopy /Y /D "$(TargetDir)CommunicationTools.dll" "$(SolutionDir)\..\Matlab\DotNetLibrary"
-if exist "$(SolutionDir)\..\Matlab\DotNetLibrary" xcopy /Y /D "$(TargetDir)StandardCommunication.dll" "$(SolutionDir)\..\Matlab\DotNetLibrary"
-if exist "$(SolutionDir)\..\Matlab\DotNetLibrary" xcopy /Y /D "$(TargetDir)UsbCommunication.dll" "$(SolutionDir)\..\Matlab\DotNetLibrary"</PostBuildEvent>
+    <PostBuildEvent>if $(ConfigurationName) == Release if exist "$(SolutionDir)\..\Matlab\DotNetLibrary" xcopy /Y /D "$(TargetDir)$(ProjectName).dll" "$(SolutionDir)\..\Matlab\DotNetLibrary"
+if $(ConfigurationName) == Release if exist "$(SolutionDir)\..\Matlab\DotNetLibrary" xcopy /Y /D "$(TargetDir)CommonTools.dll" "$(SolutionDir)\..\Matlab\DotNetLibrary"
+if $(ConfigurationName) == Release if exist "$(SolutionDir)\..\Matlab\DotNetLibrary" xcopy /Y /D "$(TargetDir)CommunicationTools.dll" "$(SolutionDir)\..\Matlab\DotNetLibrary"
+if $(ConfigurationName) == Release if exist "$(SolutionDir)\..\Matlab\DotNetLibrary" xcopy /Y /D "$(TargetDir)StandardCommunication.dll" "$(SolutionDir)\..\Matlab\DotNetLibrary"
+if $(ConfigurationName) == Release if exist "$(SolutionDir)\..\Matlab\DotNetLibrary" xcopy /Y /D "$(TargetDir)UsbCommunication.dll" "$(SolutionDir)\..\Matlab\DotNetLibrary"</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

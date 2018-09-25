@@ -14,3 +14,9 @@ Matlab/DotNetLibrary/GeneratedCommunicator*.dll
 *.fig
 *.xml
 *.db
+CSharp/TestLibrary/bin/
+CSharp/TestLibrary/obj/
+CSharp/TestLibraryConsole/bin/
+CSharp/TestLibraryConsole/obj/
+CSharp/UPxComm/bin/
+CSharp/UPxComm/obj/
