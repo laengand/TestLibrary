@@ -38,7 +38,7 @@ commGen = CommunicatorGenerator(id, pidFilePath);
 deviceComm = commGen.generatedCommunicator;
     
 %% Create a ping test
-CreateTestTemplate('PingTest', deviceComm, 'full');
+% CreateTestTemplate('PingTest', deviceComm, 'full');
 test = PingTest(deviceComm);  
 
 %% Run test

@@ -869,10 +869,26 @@ namespace TestLibrary
         return false;
       }");
 
+      generatedClass.Append(@"public bool Connect(long serial)
+      {
+      if (communication != null)
+        return communication.Connect(serial);
+      else
+        return false;
+      }");
+
       generatedClass.Append(@"public void Disconnect()
       {
         if (communication != null)
           communication.Disconnect();
+      }");
+
+      generatedClass.Append(@"public IList<long> FindDevices()
+      {
+        if (communication != null)
+          return communication.FindDevices();
+        else
+          return new List<long>();
       }");
 
       generatedClass.Append(@"
